@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شاشة العرض - المركز الطبي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; overflow: hidden; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .clinic-card { transition: all 0.3s ease; }
+        .clinic-card.calling { 
+            animation: pulse 0.5s ease-in-out 3;
+            background: linear-gradient(45deg, #10b981, #059669);
+            color: white;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .news-ticker {
+            animation: scroll-left 30s linear infinite;
+        }
+        @keyframes scroll-left {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .media-container {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+        .qr-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="bg-black text-white h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-3 px-6 flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <i class="fas fa-hospital text-xl"></i>
+            <h1 id="centerName" class="text-xl font-bold">المركز الطبي</h1>
+        </div>
+        <div class="flex items-center space-x-6">
+            <div id="currentDate" class="text-sm"></div>
+            <div id="currentTime" class="text-lg font-bold"></div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex h-screen">
+        <!-- Left Sidebar -->
+        <div class="w-1/4 bg-gray-900 p-4 flex flex-col">
+            <!-- QR Code Section -->
+            <div class="qr-container rounded-lg p-4 mb-4 text-center">
+                <h3 class="text-gray-800 font-bold mb-2">الدخول السريع</h3>
+                <div id="qrcode" class="mx-auto mb-2"></div>
+                <p class="text-xs text-gray-600">امسح الكود للدخول</p>
+            </div>
+            
+            <!-- Clinics Cards -->
+            <div class="flex-1 overflow-y-auto">
+                <h3 class="text-white font-bold mb-4 text-center">العيادات الحالية</h3>
+                <div id="clinicsContainer" class="space-y-3">
+                    <!-- Clinics will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Display Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Media Display -->
+            <div class="media-container flex-1 p-8 flex items-center justify-center">
+                <div id="mediaDisplay" class="text-center">
+                    <i class="fas fa-play-circle text-6xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-300">انتظر حتى يتم عرض المحتوى التوعوي</p>
+                </div>
+            </div>
+
+            <!-- News Ticker -->
+            <div class="bg-red-600 text-white py-3 overflow-hidden">
+                <div id="newsTicker" class="news-ticker text-lg font-bold whitespace-nowrap">
+                    مرحباً بكم في المركز الطبي - نسعى لتقديم أفضل خدمة طبية لكم
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Notification Modal -->
+    <div id="callModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50">
+        <div class="bg-white text-gray-900 rounded-lg p-8 text-center max-w-md mx-4">
+            <i class="fas fa-bullhorn text-4xl text-green-600 mb-4"></i>
+            <h3 class="text-2xl font-bold mb-2">نداء العميل</h3>
+            <div id="callMessage" class="text-lg mb-4"></div>
+            <div id="callTime" class="text-sm text-gray-600 mb-4"></div>
+            <button onclick="closeCallModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                إغلاق
+            </button>
+        </div>
+    </div>
+
+    <!-- Audio Ding -->
+    <audio id="dingSound" preload="auto">
+        <source src="audio/ding.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/display.js"></script>
+</body>
+</html>

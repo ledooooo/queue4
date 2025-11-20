@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة الحضور والانتظار - المركز الطبي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .pulse-animation { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-6">
+            <div class="text-center">
+                <i class="fas fa-hospital text-4xl mb-4 pulse-animation"></i>
+                <h1 class="text-3xl font-bold mb-2">نظام إدارة الحضور والانتظار</h1>
+                <p class="text-xl text-blue-100">للمراكز الطبية والعيادات</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-12">
+        <!-- Welcome Section -->
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">مرحباً بكم في نظام إدارة الحضور والانتظار</h2>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                نظام متكامل لإدارة طوابير العملاء في المراكز الطبيـة يوفر واجهة عربية سهلة الاستخدام مع دعم كامل للغة العربية، 
+                نطق الأرقام العربية، وإدارة متقدمة للعيادات والمستخدمين.
+            </p>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            <!-- Settings -->
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover text-center">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-cog text-2xl text-blue-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">الإدارة</h3>
+                <p class="text-gray-600 mb-4">إدارة كاملة للمركز والعيادات والإعدادات</p>
+                <a href="settings.html" class="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-arrow-left ml-2"></i>الدخول
+                </a>
+            </div>
+
+            <!-- Display -->
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-desktop text-2xl text-green-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">عرض الشاشة</h3>
+                <p class="text-gray-600 mb-4">شاشة عرض حية للعملاء مع نداءات صوتية</p>
+                <a href="display.html" class="inline-block bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-arrow-left ml-2"></i>الدخول
+                </a>
+            </div>
+
+            <!-- Control -->
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover text-center">
+                <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-gamepad text-2xl text-purple-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">التحكم</h3>
+                <p class="text-gray-600 mb-4">لوحة تحكم الأطباء للعيادات المختلفة</p>
+                <a href="control.html" class="inline-block bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-arrow-left ml-2"></i>الدخول
+                </a>
+            </div>
+
+            <!-- Tickets -->
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover text-center">
+                <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-print text-2xl text-orange-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">طباعة التذاكر</h3>
+                <p class="text-gray-600 mb-4">طباعة تذاكر مرتبة بحساب وقت الانتظار</p>
+                <a href="tickets.html" class="inline-block bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition-colors">
+                    <i class="fas fa-arrow-left ml-2"></i>الدخول
+                </a>
+            </div>
+        </div>
+
+        <!-- System Features -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-8 text-center">مميزات النظام</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="flex items-start space-x-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-language text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">دعم كامل للغة العربية</h3>
+                        <p class="text-gray-600">واجهة عربية بالكامل مع نطق صحيح للأرقام العربية</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-volume-up text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">نظام صوتي متقدم</h3>
+                        <p class="text-gray-600">نطق صناعي أو ملفات صوتية مع تمييز العيادة أثناء النداء</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-shield-alt text-purple-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">نظام أمان متقدم</h3>
+                        <p class="text-gray-600">كل عيادة لها كلمة مرور خاصة مع نظم دخول آمنة</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-qrcode text-red-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">QR Code للدخول السريع</h3>
+                        <p class="text-gray-600">يمكن للعملاء مسح الكود للدخول إلى الصفحة بسرعة</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-clock text-yellow-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">حساب وقت الانتظار</h3>
+                        <p class="text-gray-600">حساب تلقائي لوقت الانتظار التقديري على التذاكر</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-keyboard text-indigo-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">اختصارات لوحة المفاتيح</h3>
+                        <p class="text-gray-600">تحكم سريع باستخدام مفاتيح الأسهم والمساحة</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Start Guide -->
+        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">دليل البدء السريع</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">للمسؤولين</h3>
+                    <ol class="space-y-2 text-gray-600">
+                        <li class="flex items-center"><span class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm ml-2">1</span>ادخل إلى صفحة الإدارة</li>
+                        <li class="flex items-center"><span class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm ml-2">2</span>أضف بيانات مركزك الطبي</li>
+                        <li class="flex items-center"><span class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm ml-2">3</span>أنشئ العيادات وحدد كلمات المرور</li>
+                        <li class="flex items-center"><span class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm ml-2">4</span>اختر إعدادات الصوت والنطق</li>
+                    </ol>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">للأطباء</h3>
+                    <ol class="space-y-2 text-gray-600">
+                        <li class="flex items-center"><span class="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm ml-2">1</span>ادخل إلى صفحة التحكم</li>
+                        <li class="flex items-center"><span class="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm ml-2">2</span>اختر عيادتك وأدخل كلمة المرور</li>
+                        <li class="flex items-center"><span class="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm ml-2">3</span>استخدم الأزرار للتحكم في الأرقام</li>
+                        <li class="flex items-center"><span class="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm ml-2">4</span>استخدم مفاتيح الأسهم للتحكم السريع</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center py-8">
+        <div class="container mx-auto px-6">
+            <p class="text-lg mb-2">نظام إدارة الحضور والانتظار - المركز الطبي</p>
+            <p class="text-gray-400 text-sm">© 2024 جميع الحقوق محفوظة</p>
+            <div class="mt-4">
+                <span class="text-gray-300">مدعوم بـ:</span>
+                <a href="https://firebase.google.com" class="text-blue-400 hover:text-blue-300 mx-2">Firebase</a>
+                <span class="text-gray-300">|</span>
+                <a href="https://tailwindcss.com" class="text-blue-400 hover:text-blue-300 mx-2">Tailwind CSS</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on scroll
+            const cards = document.querySelectorAll('.card-hover');
+            
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+            
+            cards.forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>

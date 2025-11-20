@@ -1,0 +1,38 @@
+{
+  "name": "medical-center-queue-system",
+  "version": "1.0.0",
+  "description": "نظام إدارة الحضور والانتظار للمراكز الطبية باللغة العربية",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "build": "echo 'No build process required for static site'",
+    "deploy": "firebase deploy",
+    "init-firebase": "firebase init"
+  },
+  "keywords": [
+    "medical",
+    "queue",
+    "system",
+    "arabic",
+    "firebase",
+    "realtime",
+    "healthcare",
+    "clinic"
+  ],
+  "author": "Medical Center System",
+  "license": "MIT",
+  "devDependencies": {
+    "firebase-tools": "^12.0.0"
+  },
+  "dependencies": {
+    "firebase": "^9.22.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/medical-center-queue-system"
+  },
+  "homepage": "https://your-domain.com",
+  "bugs": {
+    "url": "https://github.com/your-username/medical-center-queue-system/issues"
+  }
+}
