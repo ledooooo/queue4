@@ -24,56 +24,6 @@ class SettingsManager {
         this.updateUI();
     }
 
-    loadAudioFiles() {
-        // In a real application, this would fetch a list of audio files from the server.
-        // For this static project, we will use a predefined list based on the audio folder content.
-        this.audioFiles = [
-            { name: 'رسالة هدوء', file: 'keepquite.mp3' },
-            { name: 'رسالة نظافة', file: 'nazafa.mp3' },
-            { name: 'صوت إعادة تعيين', file: 'reset.mp3' },
-            { name: 'صوت النداء (بداية)', file: 'prefix.mp3' },
-            { name: 'صوت النداء (نهاية)', file: 'suffix.mp3' },
-            { name: 'صوت جرس', file: 'ding.mp3' },
-            { name: 'صوت التوجه إلى', file: 'go_to.mp3' },
-            // Add more files as needed, or dynamically load them if a server is available.
-        ];
-        this.updateAudioFilesSelect();
-    }
-
-    updateAudioFilesSelect() {
-        const select = document.getElementById('audioFileSelect');
-        if (!select) return;
-
-        select.innerHTML = '<option value="">-- اختر ملف صوتي --</option>';
-        
-        this.audioFiles.forEach(audio => {
-            const option = document.createElement('option');
-            option.value = audio.file;
-            option.textContent = audio.name;
-            select.appendChild(option);
-        });
-    }
-
-    playSelectedAudio() {
-        const select = document.getElementById('audioFileSelect');
-        const audioFile = select.value;
-
-        if (!audioFile) {
-            this.showNotification('يرجى اختيار ملف صوتي أولاً', 'error');
-            return;
-        }
-
-        // Send command to display screen to play the audio file
-        db.display.set({
-            type: 'custom_audio',
-            content: audioFile,
-            timestamp: Date.now()
-        });
-
-        const audioName = this.audioFiles.find(a => a.file === audioFile)?.name || audioFile;
-        this.showNotification(`تم إذاعة الملف الصوتي: ${audioName}`, 'success');
-    }
-
     setupEventListeners() {
         // Save settings button
         document.getElementById('saveSettings')?.addEventListener('click', () => {
