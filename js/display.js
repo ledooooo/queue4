@@ -30,8 +30,11 @@ class DisplayManager {
         db.clinics.on('value', (snapshot) => {
             if (snapshot.exists()) {
                 this.clinics = Object.values(snapshot.val());
+                console.log('Clinics loaded:', this.clinics); // Debug log
                 this.updateClinicsDisplay();
                 this.updateCallDuration();
+            } else {
+                console.warn('No clinics data found in Firebase');
             }
         });
 
@@ -65,13 +68,29 @@ class DisplayManager {
             if (snapshot.exists()) {
                 this.settings = snapshot.val();
                 this.updateDisplay();
+            } else {
+                console.warn('No settings found');
             }
         });
 
         db.clinics.once('value', (snapshot) => {
             if (snapshot.exists()) {
                 this.clinics = Object.values(snapshot.val());
+                console.log('Initial clinics loaded:', this.clinics);
                 this.updateClinicsDisplay();
+            } else {
+                console.error('No clinics found in database');
+                // Show error message to user
+                const container = document.getElementById('clinicsContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="text-center text-gray-400 p-4">
+                            <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
+                            <p>لا توجد عيادات متاحة</p>
+                            <p class="text-xs mt-2">يرجى إضافة العيادات من صفحة الإعدادات</p>
+                        </div>
+                    `;
+                }
             }
         });
     }
@@ -91,7 +110,20 @@ class DisplayManager {
 
     updateClinicsDisplay() {
         const container = document.getElementById('clinicsContainer');
-        if (!container) return;
+        if (!container) {
+            console.error('Clinics container not found');
+            return;
+        }
+
+        if (!this.clinics || this.clinics.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-gray-400 p-4">
+                    <i class="fas fa-clinic-medical text-3xl mb-2"></i>
+                    <p>لا توجد عيادات</p>
+                </div>
+            `;
+            return;
+        }
 
         container.innerHTML = '';
         
@@ -99,6 +131,8 @@ class DisplayManager {
             const clinicCard = this.createClinicCard(clinic);
             container.appendChild(clinicCard);
         });
+        
+        console.log(`Displayed ${this.clinics.length} clinics`);
     }
 
     createClinicCard(clinic) {
@@ -442,4 +476,11 @@ class DisplayManager {
 
 // Global function for onclick handler
 function toggleMute() {
-    displayManager.toggleMute()
+    displayManager.toggleMute();
+}
+
+// ⭐ الإضافة المهمة - Initialize display manager
+const displayManager = new DisplayManager();
+
+// Log initialization
+console.log('Display Manager initialized successfully');
