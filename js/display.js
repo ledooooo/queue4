@@ -173,6 +173,11 @@ class DisplayManager {
     }
 
     handleNewCall(call) {
+        // Ignore calls older than 5 seconds to prevent re-calling on refresh
+        if (Date.now() - call.timestamp > 5000) {
+            console.log('Ignoring old call:', call);
+            return;
+        }
         // Play ding sound only if not muted
         if (!this.isMuted) {
             this.playDingSound();
@@ -290,6 +295,9 @@ class DisplayManager {
     }
 
     handleDisplayUpdate(displayData) {
+        // Clear media display on any new update
+        this.clearMediaDisplay();
+
         switch (displayData.type) {
             case 'client_name':
                 // Display client name on screen
@@ -302,6 +310,18 @@ class DisplayManager {
             case 'audio_message':
                 // Play audio message
                 this.playAudioMessage(displayData.content);
+                break;
+            case 'video':
+                // Display video
+                this.showVideo(displayData.content);
+                break;
+            case 'message':
+                // Display message
+                this.showMessage(displayData.content);
+                break;
+            case 'emergency':
+                // Display emergency message
+                this.showEmergency(displayData.content);
                 break;
         }
     }
@@ -316,6 +336,10 @@ class DisplayManager {
     showClientName(name) {
         // Implementation to show client name on display
         console.log('Showing client name:', name);
+        const mediaDisplay = document.getElementById('mediaDisplay');
+        if (mediaDisplay) {
+            mediaDisplay.innerHTML = `<h2 class="text-6xl font-bold text-white">${name}</h2>`;
+        }
     }
 
     playCustomAudio(audioFile) {
@@ -329,6 +353,58 @@ class DisplayManager {
         if (!this.isMuted) {
             const audio = new Audio(`${this.settings.audioPath || '/audio/'}${audioFile}`);
             audio.play().catch(e => console.log('Could not play audio message:', e));
+        }
+    }
+
+    showVideo(videoFile) {
+        const mediaDisplay = document.getElementById('mediaDisplay');
+        if (mediaDisplay) {
+            const videoPath = this.settings.mediaPath || '/media/';
+            mediaDisplay.innerHTML = `
+                <video id="mainVideo" width="100%" height="100%" autoplay loop muted>
+                    <source src="${videoPath}${videoFile}" type="video/mp4">
+                    متصفحك لا يدعم عرض الفيديو.
+                </video>
+            `;
+            // Ensure video starts playing
+            const videoElement = document.getElementById('mainVideo');
+            if (videoElement) {
+                videoElement.play().catch(e => console.log('Video autoplay failed:', e));
+            }
+        }
+    }
+
+    showMessage(message) {
+        const mediaDisplay = document.getElementById('mediaDisplay');
+        if (mediaDisplay) {
+            mediaDisplay.innerHTML = `
+                <div class="text-center p-8 bg-blue-900/50 rounded-xl">
+                    <i class="fas fa-info-circle text-6xl text-blue-400 mb-4"></i>
+                    <p class="text-4xl font-bold text-white">${message}</p>
+                </div>
+            `;
+        }
+    }
+
+    showEmergency(message) {
+        const mediaDisplay = document.getElementById('mediaDisplay');
+        if (mediaDisplay) {
+            mediaDisplay.innerHTML = `
+                <div class="text-center p-8 bg-red-900/50 rounded-xl animate-pulse">
+                    <i class="fas fa-exclamation-triangle text-8xl text-red-400 mb-4"></i>
+                    <p class="text-5xl font-extrabold text-white">${message}</p>
+                </div>
+            `;
+        }
+    }
+
+    clearMediaDisplay() {
+        const mediaDisplay = document.getElementById('mediaDisplay');
+        if (mediaDisplay) {
+            mediaDisplay.innerHTML = `
+                <i class="fas fa-play-circle text-6xl text-gray-400 mb-4"></i>
+                <p class="text-gray-300">انتظر حتى يتم عرض المحتوى التوعوي</p>
+            `;
         }
     }
 
@@ -375,7 +451,11 @@ class DisplayManager {
             }
         }
         
-        if (number >= 20) {
+        if (number >= 11 && number <= 19) {
+            // Numbers 11 to 19 are handled by their own files (e.g., 11.mp3)
+            await this.playAudioFile(`${audioPath}${number}.mp3`);
+            number = 0; // Handled
+        } else if (number >= 20) {
             const tens = Math.floor(number / 10) * 10;
             await this.playAudioFile(`${audioPath}${tens}.mp3`);
             number %= 10;
@@ -385,6 +465,7 @@ class DisplayManager {
         }
         
         if (number > 0) {
+            // Numbers 1 to 10 are handled here
             await this.playAudioFile(`${audioPath}${number}.mp3`);
         }
     }

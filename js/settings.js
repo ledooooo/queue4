@@ -70,8 +70,9 @@ class SettingsManager {
         document.getElementById('speechSpeed').value = this.settings.speechSpeed || 1;
         document.getElementById('audioPath').value = this.settings.audioPath || '/audio/';
         document.getElementById('mediaPath').value = this.settings.mediaPath || '/media/';
-        document.getElementById('newsTicker').value = this.settings.newsTicker || '';
-        document.getElementById('callDuration').value = this.settings.callDuration || 8;
+	        document.getElementById('newsTicker').value = this.settings.newsTicker || '';
+	        document.getElementById('callDuration').value = this.settings.callDuration || 8;
+	        document.getElementById('currentVideo').value = this.settings.currentVideo || '1.mp4';
         document.getElementById('autoPlayInterval').value = this.settings.autoPlayInterval || 0;
         
         // Update audio type radio buttons
@@ -200,8 +201,9 @@ class SettingsManager {
         this.settings.audioPath = document.getElementById('audioPath').value;
         this.settings.mediaPath = document.getElementById('mediaPath').value;
         this.settings.newsTicker = document.getElementById('newsTicker').value;
-        this.settings.callDuration = parseInt(document.getElementById('callDuration').value) || 8000;
-        this.settings.autoPlayInterval = parseInt(document.getElementById('autoPlayInterval').value) || 0;
+	        this.settings.callDuration = parseInt(document.getElementById('callDuration').value) || 8000;
+	        this.settings.autoPlayInterval = parseInt(document.getElementById('autoPlayInterval').value) || 0;
+	        this.settings.currentVideo = document.getElementById('currentVideo').value;
         
         // Get selected audio type
         const selectedAudioType = document.querySelector('input[name="audioType"]:checked');
@@ -290,7 +292,19 @@ class SettingsManager {
                 timestamp: Date.now()
             });
             
-            this.showNotification(`تم تشغيل الرسالة: ${selectedMessage}`, 'success');
+	        this.showNotification(`تم تشغيل الرسالة: ${selectedMessage}`, 'success');
+	        }
+	    }
+
+    setVideo() {
+        const videoFile = prompt('أدخل اسم ملف الفيديو (مثلاً: 1.mp4):');
+        if (videoFile) {
+            db.display.set({
+                type: 'video',
+                content: videoFile,
+                timestamp: Date.now()
+            });
+            this.showNotification(`تم تعيين الفيديو: ${videoFile}`, 'success');
         }
     }
 
@@ -578,6 +592,10 @@ function playCustomAudio() {
 
 function playAudioMessage() {
     settingsManager.playAudioMessage();
+}
+
+function setVideo() {
+    settingsManager.setVideo();
 }
 
 function recordAudio() {
