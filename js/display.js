@@ -135,33 +135,36 @@ class DisplayManager {
         console.log(`Displayed ${this.clinics.length} clinics`);
     }
 
-    createClinicCard(clinic) {
-        const isPaused = clinic.status === 'paused';
-        const statusClass = isPaused ? 'opacity-60' : '';
-        const statusText = isPaused ? ' (متوقفة)' : '';
-        const statusIcon = isPaused ? 'fas fa-pause' : 'fas fa-clock';
-        const cardBg = isPaused ? 'bg-gray-700' : 'bg-gray-800';
-        
-        const card = document.createElement('div');
-        card.className = `clinic-card ${cardBg} rounded-lg p-2 text-center border border-gray-600 ${statusClass}`;
-        card.id = `clinic-${clinic.id}`;
-        
-        const textColor = isPaused ? 'text-gray-400' : 'text-white';
-        const numberColor = isPaused ? 'text-gray-500' : 'text-blue-400';
-        
-        card.innerHTML = `
-            <h3 class="${textColor} font-bold text-base mb-1">${clinic.name}${statusText}</h3>
-            <div class="text-2xl font-bold ${numberColor} mb-1" id="current-${clinic.id}">
-                ${clinic.currentNumber || 0}
-            </div>
-            <div class="text-xs text-gray-400">
-                <i class="${statusIcon} ml-1"></i>
-                <span id="wait-time-${clinic.id}">${isPaused ? 'متوقفة' : 'غير محدد'}</span>
-            </div>
-        `;
-        
-        return card;
-    }
+	    createClinicCard(clinic) {
+	        const isPaused = clinic.status === 'paused';
+	        // Use a more distinct color scheme for better aesthetics and clarity
+	        const cardBg = isPaused ? 'bg-gray-800 opacity-70' : 'bg-gray-700 hover:bg-gray-600 transition duration-300';
+	        const borderColor = isPaused ? 'border-gray-600' : 'border-blue-500';
+	        const nameColor = isPaused ? 'text-gray-400' : 'text-white';
+	        const numberColor = isPaused ? 'text-gray-500' : 'text-yellow-400';
+	        
+	        const card = document.createElement('div');
+	        card.className = `clinic-card ${cardBg} rounded-xl p-4 text-right border-2 ${borderColor}`;
+	        card.id = `clinic-${clinic.id}`;
+	        
+	        card.innerHTML = `
+	            <div class="flex justify-between items-center mb-2">
+	                <h3 class="${nameColor} font-extrabold text-xl">${clinic.name}</h3>
+	                <div class="flex items-center space-x-2">
+	                    <span class="text-sm text-gray-400">${isPaused ? 'متوقفة' : 'الرقم الحالي:'}</span>
+	                    <div class="text-3xl font-black ${numberColor}" id="current-${clinic.id}">
+	                        ${clinic.currentNumber || 0}
+	                    </div>
+	                </div>
+	            </div>
+	            <div class="text-xs text-gray-400 flex justify-between">
+	                <span>عيادة رقم: ${clinic.number}</span>
+	                <span id="wait-time-${clinic.id}">${isPaused ? 'العيادة متوقفة مؤقتاً' : 'وقت الانتظار غير محدد'}</span>
+	            </div>
+	        `;
+	        
+	        return card;
+	    }
 
     updateCurrentNumbers(currentData) {
         Object.keys(currentData).forEach(clinicId => {
@@ -195,15 +198,13 @@ class DisplayManager {
         // Show call notification
         this.showCallNotification(call);
 
-	        // Play audio based on settings
-	        if (!this.isMuted) {
-	            if (this.settings.audioType === 'mp3') {
-	                this.playAudioSequence(call);
-	            } else {
-	                // Default to TTS
-	                this.speakCall(call);
-	            }
-	        }
+        // Play audio sequence if using MP3 files
+        if (this.settings.audioType === 'mp3' && !this.isMuted) {
+            this.playAudioSequence(call);
+        } else if (!this.isMuted) {
+            // Fallback to TTS
+            this.speakCall(call);
+        }
     }
 
     showCallNotification(call) {
@@ -227,15 +228,18 @@ class DisplayManager {
         }
     }
 
-	    speakCall(call) {
-	        const clinic = this.clinics.find(c => c.id === call.clinicId);
-	        const clinicName = clinic ? clinic.name : 'العيادة';
-	        
-	        let text = `العميل رقم ${this.numberToArabic(call.number)} التوجه إلى ${clinicName}`;
-	        
-	        // Always use TTS when speakCall is explicitly called (which is when audioType is not 'mp3')
-	        this.speakText(text);
-	    }
+    speakCall(call) {
+        const clinic = this.clinics.find(c => c.id === call.clinicId);
+        const clinicName = clinic ? clinic.name : 'العيادة';
+        
+        let text = `العميل رقم ${this.numberToArabic(call.number)} التوجه إلى ${clinicName}`;
+        
+        if (this.settings.audioType === 'tts') {
+            this.speakText(text);
+        } else {
+            this.playAudioFiles(call.number, clinicName);
+        }
+    }
 
     speakText(text) {
         if ('speechSynthesis' in window) {
@@ -255,11 +259,11 @@ class DisplayManager {
         }
     }
 
-	    playAudioFiles(number, clinicName) {
-	        // This function is now redundant as speakCall handles TTS fallback.
-	        // The MP3 sequence logic is in playAudioSequence.
-	        console.log(`Playing audio for: ${number} - ${clinicName}`);
-	    }
+    playAudioFiles(number, clinicName) {
+        // This would play concatenated audio files
+        // Implementation depends on available audio files
+        console.log(`Playing audio for: ${number} - ${clinicName}`);
+    }
 
     numberToArabic(num) {
         const ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة',
@@ -285,30 +289,13 @@ class DisplayManager {
         return num.toString();
     }
 
-	    playDingSound() {
-	        const audio = document.getElementById('dingSound');
-	        if (audio) {
-	            audio.currentTime = 0;
-	            audio.play().catch(e => console.log('Could not play ding sound:', e));
-	        }
-	    }
-	
-	    getFullPath(basePath, fileName) {
-	        // Ensure basePath ends with a slash if it's not an absolute URL
-	        if (!basePath.endsWith('/') && !basePath.match(/^https?:\/\//i)) {
-	            basePath += '/';
-	        }
-	        // If basePath is an absolute URL, we assume it's correct.
-	        // If it's a relative path, we ensure it has a leading slash if missing.
-	        if (!basePath.startsWith('/') && !basePath.match(/^https?:\/\//i)) {
-	            basePath = '/' + basePath;
-	        }
-	        
-	        // Remove leading slash from fileName if it exists, to avoid double slashes
-	        const cleanFileName = fileName.startsWith('/') ? fileName.substring(1) : fileName;
-	        
-	        return basePath + cleanFileName;
-	    }
+    playDingSound() {
+        const audio = document.getElementById('dingSound');
+        if (audio) {
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log('Could not play ding sound:', e));
+        }
+    }
 
     handleDisplayUpdate(displayData) {
         // Clear media display on any new update
@@ -358,43 +345,37 @@ class DisplayManager {
         }
     }
 
-	    playCustomAudio(audioFile) {
-	        if (!this.isMuted) {
-	            const fullAudioUrl = this.getFullPath(this.settings.audioPath || '/audio/', audioFile);
-	            const audio = new Audio(fullAudioUrl);
-	            audio.play().catch(e => console.log('Could not play custom audio:', e));
-	        }
-	    }
+    playCustomAudio(audioFile) {
+        if (!this.isMuted) {
+            const audio = new Audio(`${this.settings.audioPath || '/audio/'}${audioFile}`);
+            audio.play().catch(e => console.log('Could not play custom audio:', e));
+        }
+    }
 
-	    playAudioMessage(audioFile) {
-	        if (!this.isMuted) {
-	            const fullAudioUrl = this.getFullPath(this.settings.audioPath || '/audio/', audioFile);
-	            const audio = new Audio(fullAudioUrl);
-	            audio.play().catch(e => console.log('Could not play audio message:', e));
-	        }
-	    }
+    playAudioMessage(audioFile) {
+        if (!this.isMuted) {
+            const audio = new Audio(`${this.settings.audioPath || '/audio/'}${audioFile}`);
+            audio.play().catch(e => console.log('Could not play audio message:', e));
+        }
+    }
 
-	    showVideo(videoFile) {
-	        const mediaDisplay = document.getElementById('mediaDisplay');
-	        if (mediaDisplay) {
-	            const videoPath = this.settings.mediaPath || '/media/';
-	            const fullVideoUrl = this.getFullPath(videoPath, videoFile);
-	            
-	            mediaDisplay.innerHTML = `
-	                <video id="mainVideo" width="100%" height="100%" autoplay loop muted playsinline>
-	                    <source src="${fullVideoUrl}" type="video/mp4">
-	                    متصفحك لا يدعم عرض الفيديو.
-	                </video>
-	            `;
-	            // Ensure video starts playing
-	            const videoElement = document.getElementById('mainVideo');
-	            if (videoElement) {
-	                // Autoplay often requires 'muted' and 'playsinline' attributes to work on mobile browsers.
-	                // We also try to play it manually to cover all cases.
-	                videoElement.play().catch(e => console.log('Video autoplay failed:', e));
-	            }
-	        }
-	    }
+    showVideo(videoFile) {
+        const mediaDisplay = document.getElementById('mediaDisplay');
+        if (mediaDisplay) {
+            const videoPath = this.settings.mediaPath || '/media/';
+            mediaDisplay.innerHTML = `
+                <video id="mainVideo" width="100%" height="100%" autoplay loop muted>
+                    <source src="${videoPath}${videoFile}" type="video/mp4">
+                    متصفحك لا يدعم عرض الفيديو.
+                </video>
+            `;
+            // Ensure video starts playing
+            const videoElement = document.getElementById('mainVideo');
+            if (videoElement) {
+                videoElement.play().catch(e => console.log('Video autoplay failed:', e));
+            }
+        }
+    }
 
     showMessage(message) {
         const mediaDisplay = document.getElementById('mediaDisplay');
@@ -430,20 +411,32 @@ class DisplayManager {
         }
     }
 
-    async playAudioSequence(call) {
-        const clinic = this.clinics.find(c => c.id === call.clinicId);
-        if (!clinic) return;
-
+	    async playAudioSequence(call) {
+	        const clinic = this.clinics.find(c => c.id === call.clinicId);
+	        if (!clinic) return;
+	
 	        const audioPath = this.settings.audioPath || '/audio/';
 	        const number = parseInt(call.number);
 	        
+	        // Utility to get full path
+	        const getFullPath = (file) => {
+	            // Ensure audioPath ends with a slash if it's not an absolute URL
+	            let path = audioPath;
+	            if (!path.endsWith('/') && !path.match(/^https?:\/\//i)) {
+	                path += '/';
+	            }
+	            // Remove leading slash from file if it exists, to avoid double slashes
+	            const cleanFile = file.startsWith('/') ? file.substring(1) : file;
+	            return path + cleanFile;
+	        };
+	
 	        try {
 	            // Play ding sound
-	            await this.playAudioFile(this.getFullPath(audioPath, 'ding.mp3'));
+	            await this.playAudioFile(getFullPath('ding.mp3'));
 	            
 	            // Play prefix - create if not exists
 	            try {
-	                await this.playAudioFile(this.getFullPath(audioPath, 'prefix.mp3'));
+	                await this.playAudioFile(getFullPath('prefix.mp3'));
 	            } catch (e) {
 	                // If prefix.mp3 doesn't exist, speak the prefix text
 	                this.speakText('على العميل رقم');
@@ -451,10 +444,10 @@ class DisplayManager {
 	            }
 	            
 	            // Play number sequence
-	            await this.playNumberSequence(number, audioPath);
+	            await this.playNumberSequence(number, getFullPath);
 	            
 	            // Play clinic audio
-	            await this.playAudioFile(this.getFullPath(audioPath, `clinic${clinic.number}.mp3`));
+	            await this.playAudioFile(getFullPath(`clinic${clinic.number}.mp3`));
 	            
 	        } catch (error) {
 	            console.error('Error playing audio sequence:', error);
@@ -463,43 +456,46 @@ class DisplayManager {
 	        }
 	    }
 
-	    async playNumberSequence(number, audioPath) {
+	    async playNumberSequence(number, getFullPath) {
 	        if (number >= 100) {
 	            const hundreds = Math.floor(number / 100) * 100;
-	            await this.playAudioFile(this.getFullPath(audioPath, `${hundreds}.mp3`));
+	            await this.playAudioFile(getFullPath(`${hundreds}.mp3`));
 	            number %= 100;
 	            if (number > 0) {
-	                await this.playAudioFile(this.getFullPath(audioPath, 'and.mp3'));
+	                await this.playAudioFile(getFullPath('and.mp3'));
 	            }
 	        }
 	        
 	        if (number >= 11 && number <= 19) {
 	            // Numbers 11 to 19 are handled by their own files (e.g., 11.mp3)
-	            await this.playAudioFile(this.getFullPath(audioPath, `${number}.mp3`));
+	            await this.playAudioFile(getFullPath(`${number}.mp3`));
 	            number = 0; // Handled
 	        } else if (number >= 20) {
 	            const tens = Math.floor(number / 10) * 10;
-	            await this.playAudioFile(this.getFullPath(audioPath, `${tens}.mp3`));
+	            await this.playAudioFile(getFullPath(`${tens}.mp3`));
 	            number %= 10;
 	            if (number > 0) {
-	                await this.playAudioFile(this.getFullPath(audioPath, 'and.mp3'));
+	                await this.playAudioFile(getFullPath('and.mp3'));
 	            }
 	        }
 	        
 	        if (number > 0) {
 	            // Numbers 1 to 10 are handled here
-	            await this.playAudioFile(this.getFullPath(audioPath, `${number}.mp3`));
+	            await this.playAudioFile(getFullPath(`${number}.mp3`));
 	        }
 	    }
 
-    playAudioFile(src) {
-        return new Promise((resolve, reject) => {
-            const audio = new Audio(src);
-            audio.onended = resolve;
-            audio.onerror = reject;
-            audio.play().catch(reject);
-        });
-    }
+	    playAudioFile(src) {
+	        return new Promise((resolve, reject) => {
+	            const audio = new Audio(src);
+	            audio.onended = resolve;
+	            audio.onerror = (e) => {
+	                console.error('Audio playback error for source:', src, e);
+	                reject(e);
+	            };
+	            audio.play().catch(reject);
+	        });
+	    }
 
 	    toggleMute() {
 	        this.isMuted = !this.isMuted;
