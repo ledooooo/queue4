@@ -7,8 +7,6 @@ class DisplayManager {
         this.qrCode = null;
         this.isMuted = false;
         this.callDuration = 8000; // 8 seconds default
-        this.lastProcessedCallId = null; // Track last call to avoid duplicates on refresh
-        this.isInitialLoad = true; // Flag to prevent playing old calls
         this.init();
     }
 
@@ -18,12 +16,6 @@ class DisplayManager {
         this.initializeQRCode();
         this.updateDateTime();
         this.startDateTimeUpdater();
-        
-        // Mark initial load as complete after 2 seconds
-        setTimeout(() => {
-            this.isInitialLoad = false;
-            console.log('Initial load complete - ready to play new calls');
-        }, 2000);
     }
 
     setupEventListeners() {
@@ -38,7 +30,7 @@ class DisplayManager {
         db.clinics.on('value', (snapshot) => {
             if (snapshot.exists()) {
                 this.clinics = Object.values(snapshot.val());
-                console.log('Clinics loaded:', this.clinics);
+                console.log('Clinics loaded:', this.clinics); // Debug log
                 this.updateClinicsDisplay();
                 this.updateCallDuration();
             } else {
@@ -52,35 +44,9 @@ class DisplayManager {
             }
         });
 
-        // Listen for new calls ONLY (not existing ones)
         db.calls.on('child_added', (snapshot) => {
             const call = snapshot.val();
-            const callId = snapshot.key;
-            
-            // Skip if this is during initial load
-            if (this.isInitialLoad) {
-                console.log('Skipping old call during initial load:', callId);
-                this.lastProcessedCallId = callId; // Remember this call
-                return;
-            }
-            
-            // Skip if we already processed this call
-            if (this.lastProcessedCallId === callId) {
-                return;
-            }
-            
-            console.log('New call received:', call);
-            this.lastProcessedCallId = callId;
             this.handleNewCall(call);
-            
-            // Delete the call after processing (cleanup)
-            setTimeout(() => {
-                snapshot.ref.remove().then(() => {
-                    console.log('Call cleaned up:', callId);
-                }).catch(err => {
-                    console.error('Error cleaning up call:', err);
-                });
-            }, this.callDuration + 1000); // Wait until call animation finishes
         });
 
         db.display.on('value', (snapshot) => {
@@ -114,6 +80,7 @@ class DisplayManager {
                 this.updateClinicsDisplay();
             } else {
                 console.error('No clinics found in database');
+                // Show error message to user
                 const container = document.getElementById('clinicsContainer');
                 if (container) {
                     container.innerHTML = `
@@ -126,24 +93,16 @@ class DisplayManager {
                 }
             }
         });
-
-        // Get the last call ID to avoid replaying on refresh
-        db.calls.limitToLast(1).once('value', (snapshot) => {
-            if (snapshot.exists()) {
-                snapshot.forEach((child) => {
-                    this.lastProcessedCallId = child.key;
-                    console.log('Last processed call:', this.lastProcessedCallId);
-                });
-            }
-        });
     }
 
     updateDisplay() {
+        // Update center name
         const centerNameElement = document.getElementById('centerName');
         if (centerNameElement && this.settings.centerName) {
             centerNameElement.textContent = this.settings.centerName;
         }
 
+        // Update news ticker
         if (this.settings.newsTicker) {
             this.updateNewsTicker({ content: this.settings.newsTicker });
         }
@@ -214,7 +173,10 @@ class DisplayManager {
     }
 
     handleNewCall(call) {
-        console.log('Handling new call:', call, 'Muted:', this.isMuted);
+        // Play ding sound only if not muted
+        if (!this.isMuted) {
+            this.playDingSound();
+        }
         
         // Highlight clinic card
         const clinicCard = document.getElementById(`clinic-${call.clinicId}`);
@@ -228,16 +190,12 @@ class DisplayManager {
         // Show call notification
         this.showCallNotification(call);
 
-        // Play audio only if not muted
-        if (!this.isMuted) {
-            if (this.settings.audioType === 'mp3') {
-                this.playAudioSequence(call);
-            } else {
-                // Fallback to TTS
-                this.speakCall(call);
-            }
-        } else {
-            console.log('Audio muted - skipping playback');
+        // Play audio sequence if using MP3 files
+        if (this.settings.audioType === 'mp3' && !this.isMuted) {
+            this.playAudioSequence(call);
+        } else if (!this.isMuted) {
+            // Fallback to TTS
+            this.speakCall(call);
         }
     }
 
@@ -255,6 +213,7 @@ class DisplayManager {
             
             notification.classList.remove('hidden');
 
+            // Auto close after configured duration
             setTimeout(() => {
                 notification.classList.add('hidden');
             }, this.callDuration);
@@ -267,7 +226,11 @@ class DisplayManager {
         
         let text = `العميل رقم ${this.numberToArabic(call.number)} التوجه إلى ${clinicName}`;
         
-        this.speakText(text);
+        if (this.settings.audioType === 'tts') {
+            this.speakText(text);
+        } else {
+            this.playAudioFiles(call.number, clinicName);
+        }
     }
 
     speakText(text) {
@@ -277,6 +240,7 @@ class DisplayManager {
             utterance.rate = this.settings.speechSpeed || 1;
             utterance.pitch = 1;
             
+            // Try to use Arabic voice
             const voices = speechSynthesis.getVoices();
             const arabicVoice = voices.find(voice => voice.lang.startsWith('ar'));
             if (arabicVoice) {
@@ -285,6 +249,12 @@ class DisplayManager {
             
             speechSynthesis.speak(utterance);
         }
+    }
+
+    playAudioFiles(number, clinicName) {
+        // This would play concatenated audio files
+        // Implementation depends on available audio files
+        console.log(`Playing audio for: ${number} - ${clinicName}`);
     }
 
     numberToArabic(num) {
@@ -315,34 +285,36 @@ class DisplayManager {
         const audio = document.getElementById('dingSound');
         if (audio) {
             audio.currentTime = 0;
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(e => console.log('Could not play ding sound:', e));
-            }
+            audio.play().catch(e => console.log('Could not play ding sound:', e));
         }
     }
 
     handleDisplayUpdate(displayData) {
         switch (displayData.type) {
             case 'client_name':
+                // Display client name on screen
                 this.showClientName(displayData.content);
                 break;
             case 'custom_audio':
+                // Play custom audio
                 this.playCustomAudio(displayData.content);
                 break;
             case 'audio_message':
+                // Play audio message
                 this.playAudioMessage(displayData.content);
                 break;
         }
     }
 
     updateCallDuration() {
+        // Update call duration from settings
         if (this.settings.callDuration) {
             this.callDuration = this.settings.callDuration;
         }
     }
 
     showClientName(name) {
+        // Implementation to show client name on display
         console.log('Showing client name:', name);
     }
 
@@ -362,154 +334,81 @@ class DisplayManager {
 
     async playAudioSequence(call) {
         const clinic = this.clinics.find(c => c.id === call.clinicId);
-        if (!clinic) {
-            console.error('Clinic not found for call:', call);
-            return;
-        }
+        if (!clinic) return;
 
-        const audioPath = this.settings.audioPath || 'audio/';
-        // Ensure audioPath ends with /
-        const basePath = audioPath.endsWith('/') ? audioPath : audioPath + '/';
+        const audioPath = this.settings.audioPath || '/audio/';
         const number = parseInt(call.number);
         
-        console.log('Starting audio sequence for number:', number, 'clinic:', clinic.name);
-        
         try {
-            // 1. Play ding sound
-            await this.playAudioFile(`${basePath}ding.mp3`);
-            await this.wait(300);
+            // Play ding sound
+            await this.playAudioFile(`${audioPath}ding.mp3`);
             
-            // 2. Play prefix (على العميل رقم)
-            await this.playAudioFile(`${basePath}prefix.mp3`);
-            await this.wait(300);
+            // Play prefix - create if not exists
+            try {
+                await this.playAudioFile(`${audioPath}prefix.mp3`);
+            } catch (e) {
+                // If prefix.mp3 doesn't exist, speak the prefix text
+                this.speakText('على العميل رقم');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
             
-            // 3. Play number sequence - FIXED ORDER: hundreds, and, ones, and, tens
-            await this.playNumberSequenceMP3(number, basePath);
-            await this.wait(300);
+            // Play number sequence
+            await this.playNumberSequence(number, audioPath);
             
-            // 4. Play clinic audio (التوجه إلى عيادة...)
-            const clinicFile = `${basePath}clinic${clinic.number || clinic.id}.mp3`;
-            console.log('Playing clinic file:', clinicFile);
-            await this.playAudioFile(clinicFile);
-            
-            console.log('Audio sequence completed successfully');
+            // Play clinic audio
+            await this.playAudioFile(`${audioPath}clinic${clinic.number}.mp3`);
             
         } catch (error) {
-            console.error('Error in audio sequence:', error);
+            console.error('Error playing audio sequence:', error);
             // Fallback to TTS
-            console.log('Falling back to TTS');
             this.speakCall(call);
         }
     }
 
-    async playNumberSequenceMP3(number, basePath) {
-        console.log('Playing number sequence for:', number);
-        
-        // Handle numbers 1-999
-        let hundreds = 0;
-        let tens = 0;
-        let ones = 0;
-        
+    async playNumberSequence(number, audioPath) {
         if (number >= 100) {
-            hundreds = Math.floor(number / 100) * 100;
-            number = number % 100;
+            const hundreds = Math.floor(number / 100) * 100;
+            await this.playAudioFile(`${audioPath}${hundreds}.mp3`);
+            number %= 100;
+            if (number > 0) {
+                await this.playAudioFile(`${audioPath}and.mp3`);
+            }
         }
         
         if (number >= 20) {
-            tens = Math.floor(number / 10) * 10;
-            number = number % 10;
-        }
-        
-        ones = number;
-        
-        // Play: hundreds + and + ones + and + tens
-        // Example: 345 = 300 + and + 5 + and + 40
-        
-        if (hundreds > 0) {
-            console.log('Playing hundreds:', hundreds);
-            await this.playAudioFile(`${basePath}${hundreds}.mp3`);
-            await this.wait(200);
-            
-            if (ones > 0 || tens > 0) {
-                console.log('Playing "and" after hundreds');
-                await this.playAudioFile(`${basePath}and.mp3`);
-                await this.wait(200);
+            const tens = Math.floor(number / 10) * 10;
+            await this.playAudioFile(`${audioPath}${tens}.mp3`);
+            number %= 10;
+            if (number > 0) {
+                await this.playAudioFile(`${audioPath}and.mp3`);
             }
         }
         
-        if (ones > 0) {
-            console.log('Playing ones:', ones);
-            await this.playAudioFile(`${basePath}${ones}.mp3`);
-            await this.wait(200);
-            
-            if (tens > 0) {
-                console.log('Playing "and" between ones and tens');
-                await this.playAudioFile(`${basePath}and.mp3`);
-                await this.wait(200);
-            }
-        }
-        
-        if (tens > 0) {
-            console.log('Playing tens:', tens);
-            await this.playAudioFile(`${basePath}${tens}.mp3`);
-            await this.wait(200);
-        }
-        
-        // Special case: if number is exactly 20, 30, etc. (no ones)
-        if (ones === 0 && tens > 0 && hundreds === 0) {
-            console.log('Playing tens only:', tens);
-            await this.playAudioFile(`${basePath}${tens}.mp3`);
-            await this.wait(200);
+        if (number > 0) {
+            await this.playAudioFile(`${audioPath}${number}.mp3`);
         }
     }
 
     playAudioFile(src) {
-        console.log('Attempting to play:', src);
         return new Promise((resolve, reject) => {
             const audio = new Audio(src);
-            
-            audio.onended = () => {
-                console.log('Finished playing:', src);
-                resolve();
-            };
-            
-            audio.onerror = (e) => {
-                console.error('Error loading audio:', src, e);
-                reject(new Error(`Failed to load: ${src}`));
-            };
-            
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(err => {
-                    console.error('Error playing audio:', src, err);
-                    reject(err);
-                });
-            }
+            audio.onended = resolve;
+            audio.onerror = reject;
+            audio.play().catch(reject);
         });
-    }
-
-    wait(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     toggleMute() {
         this.isMuted = !this.isMuted;
         const button = document.getElementById('muteButton');
-        if (!button) {
-            console.error('Mute button not found');
-            return;
-        }
-        
         const icon = button.querySelector('i');
         
         if (this.isMuted) {
             icon.className = 'fas fa-volume-mute';
             button.className = 'bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm';
-            console.log('Audio muted');
         } else {
             icon.className = 'fas fa-volume-up';
             button.className = 'bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm';
-            console.log('Audio unmuted');
         }
     }
 
@@ -522,15 +421,17 @@ class DisplayManager {
             
             ticker.textContent = content;
             
+            // Force animation restart
             ticker.style.animation = 'none';
-            ticker.offsetHeight;
+            ticker.offsetHeight; // Trigger reflow
             ticker.style.animation = null;
         }
     }
 
     initializeQRCode() {
         const qrContainer = document.getElementById('qrcode');
-        if (qrContainer && typeof QRCode !== 'undefined') {
+        if (qrContainer) {
+            // Generate QR code for the display page URL
             const displayUrl = window.location.origin + window.location.pathname.replace('display.html', '');
             this.qrCode = new QRCode(qrContainer, {
                 text: displayUrl,
@@ -545,6 +446,8 @@ class DisplayManager {
 
     updateDateTime() {
         const now = new Date();
+        
+        // Update combined date and time
         const dateTimeElement = document.getElementById('currentDateTime');
         if (dateTimeElement) {
             const dateStr = now.toLocaleDateString('ar-SA', {
@@ -564,6 +467,7 @@ class DisplayManager {
     }
 
     startDateTimeUpdater() {
+        // Update time every second
         setInterval(() => {
             this.updateDateTime();
         }, 1000);
@@ -572,14 +476,11 @@ class DisplayManager {
 
 // Global function for onclick handler
 function toggleMute() {
-    if (typeof displayManager !== 'undefined') {
-        displayManager.toggleMute();
-    } else {
-        console.error('Display manager not initialized');
-    }
+    displayManager.toggleMute();
 }
 
-// Initialize display manager
+// ⭐ الإضافة المهمة - Initialize display manager
 const displayManager = new DisplayManager();
 
+// Log initialization
 console.log('Display Manager initialized successfully');
