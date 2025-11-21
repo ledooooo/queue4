@@ -196,11 +196,11 @@ class SettingsManager {
 
     saveSettings() {
         // Collect form data
-        this.settings.centerName = document.getElementById('centerName').value;
-        this.settings.speechSpeed = parseFloat(document.getElementById('speechSpeed').value);
+	        this.settings.centerName = document.getElementById('centerName').value;
+	        this.settings.speechSpeed = parseFloat(document.getElementById('speechSpeed').value);
 	        this.settings.audioPath = this.normalizePath(document.getElementById('audioPath').value);
 	        this.settings.mediaPath = this.normalizePath(document.getElementById('mediaPath').value);
-        this.settings.newsTicker = document.getElementById('newsTicker').value;
+	        this.settings.newsTicker = document.getElementById('newsTicker').value;
 	        this.settings.callDuration = parseInt(document.getElementById('callDuration').value) || 8000;
 	        this.settings.autoPlayInterval = parseInt(document.getElementById('autoPlayInterval').value) || 0;
 	        this.settings.currentVideo = document.getElementById('currentVideo').value;
@@ -208,10 +208,10 @@ class SettingsManager {
         // Get selected audio type
         const selectedAudioType = document.querySelector('input[name="audioType"]:checked');
         if (selectedAudioType) {
-	            this.settings.audioType = selectedAudioType.value;
-	        }
-	
-	        // Save to Firebase
+            this.settings.audioType = selectedAudioType.value;
+        }
+
+        // Save to Firebase
         db.settings.set(this.settings)
             .then(() => {
                 this.showNotification('تم حفظ الإعدادات بنجاح', 'success');
@@ -549,27 +549,41 @@ class SettingsManager {
         });
     }
 
-    showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 ${
-            type === 'success' ? 'bg-green-600' : 
-            type === 'error' ? 'bg-red-600' : 
-            'bg-blue-600'
-        }`;
-        notification.textContent = message;
-
-        // Add to page
-        document.body.appendChild(notification);
-
-        // Remove after 3 seconds
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
-    }
-}
-
-// Global functions for onclick handlers
+	    showNotification(message, type = 'info') {
+	        // Create notification element
+	        const notification = document.createElement('div');
+	        notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 ${
+	            type === 'success' ? 'bg-green-600' : 
+	            type === 'error' ? 'bg-red-600' : 
+	            'bg-blue-600'
+	        }`;
+	        notification.textContent = message;
+	
+	        // Add to page
+	        document.body.appendChild(notification);
+	
+	        // Remove after 3 seconds
+	        setTimeout(() => {
+	            notification.remove();
+	        }, 3000);
+	    }
+	
+	    // Utility function to normalize paths
+	    normalizePath(path) {
+	        if (!path) return '/';
+	        // Remove trailing slash
+	        if (path.endsWith('/')) {
+	            path = path.substring(0, path.length - 1);
+	        }
+	        // Add leading slash if it's not an absolute URL
+	        if (!path.startsWith('/') && !path.match(/^https?:\/\//i)) {
+	            path = '/' + path;
+	        }
+	        return path;
+	    }
+	}
+	
+	// Global functions for onclick handlers
 function addClinic() {
     settingsManager.addClinic();
 }
@@ -610,64 +624,8 @@ function playSelectedAudioMessage() {
     settingsManager.playSelectedAudioMessage();
 }
 
-	// Utility function to normalize paths
-	    normalizePath(path) {
-	        if (!path) return '/';
-	        // Remove trailing slash
-	        if (path.endsWith('/')) {
-	            path = path.substring(0, path.length - 1);
-	        }
-	        // Add leading slash if it's not an absolute URL
-	        if (!path.startsWith('/') && !path.match(/^https?:\/\//i)) {
-	            path = '/' + path;
-	        }
-	        return path;
-	    }
-	}
-	
-	// Global functions for onclick handlers
-	function addClinic() {
-	    settingsManager.addClinic();
-	}
-	
-	function saveSettings() {
-	    settingsManager.saveSettings();
-	}
-	
-	function callSpecificClient() {
-	    settingsManager.callSpecificClient();
-	}
-	
-	function displayClientName() {
-	    settingsManager.displayClientName();
-	}
-	
-	function playCustomAudio() {
-	    settingsManager.playCustomAudio();
-	}
-	
-	function playAudioMessage() {
-	    settingsManager.playAudioMessage();
-	}
-	
-	function setVideo() {
-	    settingsManager.setVideo();
-	}
-	
-	function recordAudio() {
-	    settingsManager.recordAudio();
-	}
-	
-	function addAudioFile() {
-	    settingsManager.addAudioFile();
-	}
-	
-	function playSelectedAudioMessage() {
-	    settingsManager.playSelectedAudioMessage();
-	}
-	
-	// Initialize settings manager
-	let settingsManager;
-	document.addEventListener('DOMContentLoaded', () => {
-	    settingsManager = new SettingsManager();
-	});
+// Initialize settings manager
+let settingsManager;
+document.addEventListener('DOMContentLoaded', () => {
+    settingsManager = new SettingsManager();
+});
