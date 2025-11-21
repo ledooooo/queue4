@@ -195,12 +195,14 @@ class DisplayManager {
         // Show call notification
         this.showCallNotification(call);
 
-        // Play audio sequence if using MP3 files
-        if (this.settings.audioType === 'mp3' && !this.isMuted) {
-            this.playAudioSequence(call);
-        } else if (!this.isMuted) {
-            // Fallback to TTS
-            this.speakCall(call);
+        // Play audio based on settings
+        if (!this.isMuted) {
+            if (this.settings.audioType === 'mp3') {
+                this.playAudioSequence(call);
+            } else {
+                // Default to TTS
+                this.speakCall(call);
+            }
         }
     }
 
@@ -231,11 +233,8 @@ class DisplayManager {
         
         let text = `العميل رقم ${this.numberToArabic(call.number)} التوجه إلى ${clinicName}`;
         
-        if (this.settings.audioType === 'tts') {
-            this.speakText(text);
-        } else {
-            this.playAudioFiles(call.number, clinicName);
-        }
+        // Always use TTS when speakCall is explicitly called (which is when audioType is not 'mp3')
+        this.speakText(text);
     }
 
     speakText(text) {
@@ -286,13 +285,30 @@ class DisplayManager {
         return num.toString();
     }
 
-    playDingSound() {
-        const audio = document.getElementById('dingSound');
-        if (audio) {
-            audio.currentTime = 0;
-            audio.play().catch(e => console.log('Could not play ding sound:', e));
-        }
-    }
+	    playDingSound() {
+	        const audio = document.getElementById('dingSound');
+	        if (audio) {
+	            audio.currentTime = 0;
+	            audio.play().catch(e => console.log('Could not play ding sound:', e));
+	        }
+	    }
+	
+	    getFullPath(basePath, fileName) {
+	        // Ensure basePath ends with a slash if it's not an absolute URL
+	        if (!basePath.endsWith('/') && !basePath.match(/^https?:\/\//i)) {
+	            basePath += '/';
+	        }
+	        // If basePath is an absolute URL, we assume it's correct.
+	        // If it's a relative path, we ensure it has a leading slash if missing.
+	        if (!basePath.startsWith('/') && !basePath.match(/^https?:\/\//i)) {
+	            basePath = '/' + basePath;
+	        }
+	        
+	        // Remove leading slash from fileName if it exists, to avoid double slashes
+	        const cleanFileName = fileName.startsWith('/') ? fileName.substring(1) : fileName;
+	        
+	        return basePath + cleanFileName;
+	    }
 
     handleDisplayUpdate(displayData) {
         // Clear media display on any new update
@@ -356,23 +372,27 @@ class DisplayManager {
         }
     }
 
-    showVideo(videoFile) {
-        const mediaDisplay = document.getElementById('mediaDisplay');
-        if (mediaDisplay) {
-            const videoPath = this.settings.mediaPath || '/media/';
-            mediaDisplay.innerHTML = `
-                <video id="mainVideo" width="100%" height="100%" autoplay loop muted>
-                    <source src="${videoPath}${videoFile}" type="video/mp4">
-                    متصفحك لا يدعم عرض الفيديو.
-                </video>
-            `;
-            // Ensure video starts playing
-            const videoElement = document.getElementById('mainVideo');
-            if (videoElement) {
-                videoElement.play().catch(e => console.log('Video autoplay failed:', e));
-            }
-        }
-    }
+	    showVideo(videoFile) {
+	        const mediaDisplay = document.getElementById('mediaDisplay');
+	        if (mediaDisplay) {
+	            const videoPath = this.settings.mediaPath || '/media/';
+	            const fullVideoUrl = this.getFullPath(videoPath, videoFile);
+	            
+	            mediaDisplay.innerHTML = `
+	                <video id="mainVideo" width="100%" height="100%" autoplay loop muted playsinline>
+	                    <source src="${fullVideoUrl}" type="video/mp4">
+	                    متصفحك لا يدعم عرض الفيديو.
+	                </video>
+	            `;
+	            // Ensure video starts playing
+	            const videoElement = document.getElementById('mainVideo');
+	            if (videoElement) {
+	                // Autoplay often requires 'muted' and 'playsinline' attributes to work on mobile browsers.
+	                // We also try to play it manually to cover all cases.
+	                videoElement.play().catch(e => console.log('Video autoplay failed:', e));
+	            }
+	        }
+	    }
 
     showMessage(message) {
         const mediaDisplay = document.getElementById('mediaDisplay');
@@ -408,67 +428,67 @@ class DisplayManager {
         }
     }
 
-    async playAudioSequence(call) {
-        const clinic = this.clinics.find(c => c.id === call.clinicId);
-        if (!clinic) return;
+	    async playAudioSequence(call) {
+	        const clinic = this.clinics.find(c => c.id === call.clinicId);
+	        if (!clinic) return;
+	
+	        const audioPath = this.settings.audioPath || '/audio/';
+	        const number = parseInt(call.number);
+	        
+	        try {
+	            // Play ding sound
+	            await this.playAudioFile(this.getFullPath(audioPath, 'ding.mp3'));
+	            
+	            // Play prefix - create if not exists
+	            try {
+	                await this.playAudioFile(this.getFullPath(audioPath, 'prefix.mp3'));
+	            } catch (e) {
+	                // If prefix.mp3 doesn't exist, speak the prefix text
+	                this.speakText('على العميل رقم');
+	                await new Promise(resolve => setTimeout(resolve, 1000));
+	            }
+	            
+	            // Play number sequence
+	            await this.playNumberSequence(number, audioPath);
+	            
+	            // Play clinic audio
+	            await this.playAudioFile(this.getFullPath(audioPath, `clinic${clinic.number}.mp3`));
+	            
+	        } catch (error) {
+	            console.error('Error playing audio sequence:', error);
+	            // Fallback to TTS
+	            this.speakCall(call);
+	        }
+	    }
 
-        const audioPath = this.settings.audioPath || '/audio/';
-        const number = parseInt(call.number);
-        
-        try {
-            // Play ding sound
-            await this.playAudioFile(`${audioPath}ding.mp3`);
-            
-            // Play prefix - create if not exists
-            try {
-                await this.playAudioFile(`${audioPath}prefix.mp3`);
-            } catch (e) {
-                // If prefix.mp3 doesn't exist, speak the prefix text
-                this.speakText('على العميل رقم');
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-            
-            // Play number sequence
-            await this.playNumberSequence(number, audioPath);
-            
-            // Play clinic audio
-            await this.playAudioFile(`${audioPath}clinic${clinic.number}.mp3`);
-            
-        } catch (error) {
-            console.error('Error playing audio sequence:', error);
-            // Fallback to TTS
-            this.speakCall(call);
-        }
-    }
-
-    async playNumberSequence(number, audioPath) {
-        if (number >= 100) {
-            const hundreds = Math.floor(number / 100) * 100;
-            await this.playAudioFile(`${audioPath}${hundreds}.mp3`);
-            number %= 100;
-            if (number > 0) {
-                await this.playAudioFile(`${audioPath}and.mp3`);
-            }
-        }
-        
-        if (number >= 11 && number <= 19) {
-            // Numbers 11 to 19 are handled by their own files (e.g., 11.mp3)
-            await this.playAudioFile(`${audioPath}${number}.mp3`);
-            number = 0; // Handled
-        } else if (number >= 20) {
-            const tens = Math.floor(number / 10) * 10;
-            await this.playAudioFile(`${audioPath}${tens}.mp3`);
-            number %= 10;
-            if (number > 0) {
-                await this.playAudioFile(`${audioPath}and.mp3`);
-            }
-        }
-        
-        if (number > 0) {
-            // Numbers 1 to 10 are handled here
-            await this.playAudioFile(`${audioPath}${number}.mp3`);
-        }
-    }
+	    async playNumberSequence(number, audioPath) {
+	        if (number >= 100) {
+	            const hundreds = Math.floor(number / 100) * 100;
+	            await this.playAudioFile(this.getFullPath(audioPath, `${hundreds}.mp3`));
+	            number %= 100;
+	            if (number > 0) {
+	                await this.playAudioFile(this.getFullPath(audioPath, 'and.mp3'));
+	            }
+	        }
+	        
+	        if (number >= 11 && number <= 19) {
+	            // Numbers 11 to 19 are handled by their own files (e.g., 11.mp3)
+	            await this.playAudioFile(this.getFullPath(audioPath, `${number}.mp3`));
+	            number = 0; // Handled
+	        } else if (number >= 20) {
+	            const tens = Math.floor(number / 10) * 10;
+	            await this.playAudioFile(this.getFullPath(audioPath, `${tens}.mp3`));
+	            number %= 10;
+	            if (number > 0) {
+	                await this.playAudioFile(this.getFullPath(audioPath, 'and.mp3'));
+	            }
+	        }
+	        
+	        if (number > 0) {
+	            // Numbers 1 to 10 are handled here
+	            await this.playAudioFile(this.getFullPath(audioPath, `${number}.mp3`));
+	        }
+	    }
 
     playAudioFile(src) {
         return new Promise((resolve, reject) => {
@@ -486,10 +506,12 @@ class DisplayManager {
         
         if (this.isMuted) {
             icon.className = 'fas fa-volume-mute';
-            button.className = 'bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm';
+            button.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+            button.classList.add('bg-red-600', 'hover:bg-red-700');
         } else {
             icon.className = 'fas fa-volume-up';
-            button.className = 'bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm';
+            button.classList.remove('bg-red-600', 'hover:bg-red-700');
+            button.classList.add('bg-gray-600', 'hover:bg-gray-700');
         }
     }
 
@@ -525,27 +547,28 @@ class DisplayManager {
         }
     }
 
-    updateDateTime() {
-        const now = new Date();
-        
-        // Update combined date and time
-        const dateTimeElement = document.getElementById('currentDateTime');
-        if (dateTimeElement) {
-            const dateStr = now.toLocaleDateString('ar-SA', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-            
-            const timeStr = now.toLocaleTimeString('ar-SA', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-            });
-            
-            dateTimeElement.textContent = `${dateStr} ${timeStr}`;
-        }
-    }
+	    updateDateTime() {
+	        const now = new Date();
+	        
+	        // Update combined date and time
+	        const dateTimeElement = document.getElementById('currentDateTime');
+	        if (dateTimeElement) {
+	            const dateStr = now.toLocaleDateString('ar-SA', {
+	                weekday: 'long',
+	                day: 'numeric',
+	                month: 'long',
+	                year: 'numeric'
+	            });
+	            
+	            const timeStr = now.toLocaleTimeString('ar-SA', {
+	                hour: '2-digit',
+	                minute: '2-digit',
+	                hour12: true
+	            });
+	            
+	            dateTimeElement.textContent = `${dateStr} - ${timeStr}`;
+	        }
+	    }
 
     startDateTimeUpdater() {
         // Update time every second
