@@ -2,13 +2,16 @@
 class SettingsManager {
     constructor() {
         this.clinics = [];
+        this.audioFiles = [];
         this.settings = {
             centerName: 'المركز الطبي',
             speechSpeed: 1,
             audioType: 'tts',
             audioPath: '/audio/',
             mediaPath: '/media/',
-            newsTicker: 'مرحباً بكم في المركز الطبي'
+            newsTicker: 'مرحباً بكم في المركز الطبي',
+            callDuration: 8000,
+            autoPlayInterval: 0 // 0 means no auto play
         };
         this.init();
     }
@@ -16,6 +19,7 @@ class SettingsManager {
     init() {
         this.loadSettings();
         this.loadClinics();
+        this.loadAudioFiles();
         this.setupEventListeners();
         this.updateUI();
     }
@@ -68,6 +72,7 @@ class SettingsManager {
         document.getElementById('mediaPath').value = this.settings.mediaPath || '/media/';
         document.getElementById('newsTicker').value = this.settings.newsTicker || '';
         document.getElementById('callDuration').value = this.settings.callDuration || 8;
+        document.getElementById('autoPlayInterval').value = this.settings.autoPlayInterval || 0;
         
         // Update audio type radio buttons
         const audioTypeRadios = document.querySelectorAll('input[name="audioType"]');
@@ -196,6 +201,7 @@ class SettingsManager {
         this.settings.mediaPath = document.getElementById('mediaPath').value;
         this.settings.newsTicker = document.getElementById('newsTicker').value;
         this.settings.callDuration = parseInt(document.getElementById('callDuration').value) || 8000;
+        this.settings.autoPlayInterval = parseInt(document.getElementById('autoPlayInterval').value) || 0;
         
         // Get selected audio type
         const selectedAudioType = document.querySelector('input[name="audioType"]:checked');
@@ -207,11 +213,24 @@ class SettingsManager {
         db.settings.set(this.settings)
             .then(() => {
                 this.showNotification('تم حفظ الإعدادات بنجاح', 'success');
+                this.updateAutoPlayInterval();
             })
             .catch(error => {
                 console.error('Error saving settings:', error);
                 this.showNotification('فشل في حفظ الإعدادات', 'error');
             });
+    }
+
+    updateAutoPlayInterval() {
+        const interval = parseInt(document.getElementById('autoPlayInterval').value) || 0;
+        if (interval > 0) {
+            this.startAutoPlay();
+        } else {
+            if (this.autoPlayIntervalId) {
+                clearInterval(this.autoPlayIntervalId);
+                this.autoPlayIntervalId = null;
+            }
+        }
     }
 
     callSpecificClient() {
@@ -330,6 +349,192 @@ class SettingsManager {
         }
     }
 
+    // Audio Files Management
+    addAudioFile() {
+        const name = prompt('أدخل اسم الملف الصوتي:');
+        if (!name) return;
+
+        const fileName = prompt('أدخل اسم الملف مع الامتداد (مثلاً: message1.mp3):');
+        if (!fileName) return;
+
+        const interval = prompt('أدخل الفترة بين التكرار بالدقائق (0 = بدون تكرار):');
+        if (interval === null) return;
+
+        const newAudioFile = {
+            id: Date.now().toString(),
+            name: name,
+            fileName: fileName,
+            interval: parseInt(interval) || 0,
+            lastPlayed: 0,
+            active: true
+        };
+
+        this.audioFiles.push(newAudioFile);
+        this.saveAudioFiles();
+        this.updateAudioFilesList();
+        this.updateAudioSelect();
+    }
+
+    removeAudioFile(index) {
+        if (confirm('هل أنت متأكد من حذف هذا الملف الصوتي؟')) {
+            this.audioFiles.splice(index, 1);
+            this.saveAudioFiles();
+            this.updateAudioFilesList();
+            this.updateAudioSelect();
+        }
+    }
+
+    toggleAudioFile(index) {
+        this.audioFiles[index].active = !this.audioFiles[index].active;
+        this.saveAudioFiles();
+        this.updateAudioFilesList();
+    }
+
+    playAudioFileFromList(fileId) {
+        const audioFile = this.audioFiles.find(f => f.id === fileId);
+        if (audioFile && audioFile.active) {
+            db.display.set({
+                type: 'audio_message',
+                content: audioFile.fileName,
+                timestamp: Date.now()
+            });
+            
+            // Update last played time
+            audioFile.lastPlayed = Date.now();
+            this.saveAudioFiles();
+            
+            this.showNotification(`تم تشغيل: ${audioFile.name}`, 'success');
+        }
+    }
+
+    saveAudioFiles() {
+        const audioFilesObj = {};
+        this.audioFiles.forEach(file => {
+            audioFilesObj[file.id] = file;
+        });
+        
+        db.settings.child('audioFiles').set(audioFilesObj)
+            .then(() => {
+                this.showNotification('تم حفظ ملفات الصوت', 'success');
+            })
+            .catch(error => {
+                console.error('Error saving audio files:', error);
+                this.showNotification('فشل في حفظ ملفات الصوت', 'error');
+            });
+    }
+
+    loadAudioFiles() {
+        db.settings.child('audioFiles').once('value', (snapshot) => {
+            if (snapshot.exists()) {
+                this.audioFiles = Object.values(snapshot.val());
+                this.updateAudioFilesList();
+                this.updateAudioSelect();
+                this.startAutoPlay();
+            }
+        });
+    }
+
+    updateAudioFilesList() {
+        const container = document.getElementById('audioFilesList');
+        if (!container) return;
+
+        container.innerHTML = '';
+        
+        this.audioFiles.forEach((file, index) => {
+            const fileCard = this.createAudioFileCard(file, index);
+            container.appendChild(fileCard);
+        });
+    }
+
+    createAudioFileCard(file, index) {
+        const card = document.createElement('div');
+        card.className = 'bg-gray-50 rounded-lg p-4 border border-gray-200';
+        
+        const statusClass = file.active ? 'text-green-600' : 'text-red-600';
+        const statusText = file.active ? 'نشط' : 'معطل';
+        
+        card.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-semibold text-gray-800">${file.name}</h3>
+                <div class="flex space-x-2">
+                    <button onclick="settingsManager.toggleAudioFile(${index})" class="${statusClass} hover:opacity-80">
+                        <i class="fas ${file.active ? 'fa-pause' : 'fa-play'}"></i>
+                    </button>
+                    <button onclick="settingsManager.playAudioFileFromList('${file.id}')" class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button onclick="settingsManager.removeAudioFile(${index})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">اسم الملف</label>
+                    <span class="text-sm text-gray-800">${file.fileName}</span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">الحالة</label>
+                    <span class="text-sm ${statusClass}">${statusText}</span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">التكرار (دقائق)</label>
+                    <span class="text-sm text-gray-800">${file.interval || 'بدون تكرار'}</span>
+                </div>
+            </div>
+        `;
+        
+        return card;
+    }
+
+    updateAudioSelect() {
+        const select = document.getElementById('audioMessageSelect');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">-- اختر ملف صوتي --</option>';
+        
+        this.audioFiles.filter(file => file.active).forEach(file => {
+            const option = document.createElement('option');
+            option.value = file.id;
+            option.textContent = file.name;
+            select.appendChild(option);
+        });
+    }
+
+    playSelectedAudioMessage() {
+        const select = document.getElementById('audioMessageSelect');
+        if (select && select.value) {
+            this.playAudioFileFromList(select.value);
+        } else {
+            this.showNotification('يرجى اختيار ملف صوتي', 'error');
+        }
+    }
+
+    startAutoPlay() {
+        // Stop existing auto play
+        if (this.autoPlayIntervalId) {
+            clearInterval(this.autoPlayIntervalId);
+        }
+        
+        // Start new auto play (every minute)
+        this.autoPlayIntervalId = setInterval(() => {
+            this.checkAutoPlay();
+        }, 60000); // Check every minute
+    }
+
+    checkAutoPlay() {
+        const now = Date.now();
+        
+        this.audioFiles.forEach(file => {
+            if (file.active && file.interval > 0) {
+                const intervalMs = file.interval * 60000; // Convert minutes to milliseconds
+                if (now - file.lastPlayed >= intervalMs) {
+                    this.playAudioFileFromList(file.id);
+                }
+            }
+        });
+    }
+
     showNotification(message, type = 'info') {
         // Create notification element
         const notification = document.createElement('div');
@@ -377,6 +582,14 @@ function playAudioMessage() {
 
 function recordAudio() {
     settingsManager.recordAudio();
+}
+
+function addAudioFile() {
+    settingsManager.addAudioFile();
+}
+
+function playSelectedAudioMessage() {
+    settingsManager.playSelectedAudioMessage();
 }
 
 // Initialize settings manager
