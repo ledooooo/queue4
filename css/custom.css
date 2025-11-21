@@ -1,0 +1,116 @@
+/* Custom styles for the medical center queue system */
+
+/* Animation for call notification */
+@keyframes callPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes callFlash {
+    0%, 100% { background-color: white; }
+    50% { background-color: #10b981; color: white; }
+}
+
+.calling {
+    animation: callPulse 0.5s ease-in-out infinite, callFlash 0.5s ease-in-out infinite;
+}
+
+/* News ticker animation */
+.news-ticker {
+    animation: scroll-left 30s linear infinite;
+}
+
+@keyframes scroll-left {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+
+/* Clinic cards styling */
+.clinic-card {
+    transition: all 0.3s ease;
+}
+
+.clinic-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Audio controls */
+.mute-button {
+    transition: all 0.2s ease;
+}
+
+.mute-button:hover {
+    transform: scale(1.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .clinic-card {
+        padding: 8px !important;
+    }
+    
+    .clinic-card h3 {
+        font-size: 14px !important;
+    }
+    
+    .clinic-card .text-2xl {
+        font-size: 20px !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body * {
+        visibility: hidden;
+    }
+    
+    .print-section, .print-section * {
+        visibility: visible;
+    }
+    
+    .print-section {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Loading animation */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
