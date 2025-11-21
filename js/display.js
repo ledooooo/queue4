@@ -105,8 +105,13 @@ class DisplayManager {
             centerNameElement.textContent = this.settings.centerName;
         }
 
-        // Update news ticker
-    updateMediaDisplay() {
+	        // Update news ticker
+	        if (this.settings.newsTicker) {
+	            this.updateNewsTicker({ content: this.settings.newsTicker });
+	        }
+	    }
+
+	    updateMediaDisplay() {
         const mediaContainer = document.getElementById('mediaContainer');
         if (!mediaContainer || !this.settings.mediaPath) return;
 
