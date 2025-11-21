@@ -195,15 +195,15 @@ class DisplayManager {
         // Show call notification
         this.showCallNotification(call);
 
-        // Play audio based on settings
-        if (!this.isMuted) {
-            if (this.settings.audioType === 'mp3') {
-                this.playAudioSequence(call);
-            } else {
-                // Default to TTS
-                this.speakCall(call);
-            }
-        }
+	        // Play audio based on settings
+	        if (!this.isMuted) {
+	            if (this.settings.audioType === 'mp3') {
+	                this.playAudioSequence(call);
+	            } else {
+	                // Default to TTS
+	                this.speakCall(call);
+	            }
+	        }
     }
 
     showCallNotification(call) {
@@ -227,15 +227,15 @@ class DisplayManager {
         }
     }
 
-    speakCall(call) {
-        const clinic = this.clinics.find(c => c.id === call.clinicId);
-        const clinicName = clinic ? clinic.name : 'العيادة';
-        
-        let text = `العميل رقم ${this.numberToArabic(call.number)} التوجه إلى ${clinicName}`;
-        
-        // Always use TTS when speakCall is explicitly called (which is when audioType is not 'mp3')
-        this.speakText(text);
-    }
+	    speakCall(call) {
+	        const clinic = this.clinics.find(c => c.id === call.clinicId);
+	        const clinicName = clinic ? clinic.name : 'العيادة';
+	        
+	        let text = `العميل رقم ${this.numberToArabic(call.number)} التوجه إلى ${clinicName}`;
+	        
+	        // Always use TTS when speakCall is explicitly called (which is when audioType is not 'mp3')
+	        this.speakText(text);
+	    }
 
     speakText(text) {
         if ('speechSynthesis' in window) {
@@ -255,11 +255,11 @@ class DisplayManager {
         }
     }
 
-    playAudioFiles(number, clinicName) {
-        // This would play concatenated audio files
-        // Implementation depends on available audio files
-        console.log(`Playing audio for: ${number} - ${clinicName}`);
-    }
+	    playAudioFiles(number, clinicName) {
+	        // This function is now redundant as speakCall handles TTS fallback.
+	        // The MP3 sequence logic is in playAudioSequence.
+	        console.log(`Playing audio for: ${number} - ${clinicName}`);
+	    }
 
     numberToArabic(num) {
         const ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة',
@@ -358,19 +358,21 @@ class DisplayManager {
         }
     }
 
-    playCustomAudio(audioFile) {
-        if (!this.isMuted) {
-            const audio = new Audio(`${this.settings.audioPath || '/audio/'}${audioFile}`);
-            audio.play().catch(e => console.log('Could not play custom audio:', e));
-        }
-    }
+	    playCustomAudio(audioFile) {
+	        if (!this.isMuted) {
+	            const fullAudioUrl = this.getFullPath(this.settings.audioPath || '/audio/', audioFile);
+	            const audio = new Audio(fullAudioUrl);
+	            audio.play().catch(e => console.log('Could not play custom audio:', e));
+	        }
+	    }
 
-    playAudioMessage(audioFile) {
-        if (!this.isMuted) {
-            const audio = new Audio(`${this.settings.audioPath || '/audio/'}${audioFile}`);
-            audio.play().catch(e => console.log('Could not play audio message:', e));
-        }
-    }
+	    playAudioMessage(audioFile) {
+	        if (!this.isMuted) {
+	            const fullAudioUrl = this.getFullPath(this.settings.audioPath || '/audio/', audioFile);
+	            const audio = new Audio(fullAudioUrl);
+	            audio.play().catch(e => console.log('Could not play audio message:', e));
+	        }
+	    }
 
 	    showVideo(videoFile) {
 	        const mediaDisplay = document.getElementById('mediaDisplay');
@@ -428,10 +430,10 @@ class DisplayManager {
         }
     }
 
-	    async playAudioSequence(call) {
-	        const clinic = this.clinics.find(c => c.id === call.clinicId);
-	        if (!clinic) return;
-	
+    async playAudioSequence(call) {
+        const clinic = this.clinics.find(c => c.id === call.clinicId);
+        if (!clinic) return;
+
 	        const audioPath = this.settings.audioPath || '/audio/';
 	        const number = parseInt(call.number);
 	        
@@ -499,21 +501,21 @@ class DisplayManager {
         });
     }
 
-    toggleMute() {
-        this.isMuted = !this.isMuted;
-        const button = document.getElementById('muteButton');
-        const icon = button.querySelector('i');
-        
-        if (this.isMuted) {
-            icon.className = 'fas fa-volume-mute';
-            button.classList.remove('bg-gray-600', 'hover:bg-gray-700');
-            button.classList.add('bg-red-600', 'hover:bg-red-700');
-        } else {
-            icon.className = 'fas fa-volume-up';
-            button.classList.remove('bg-red-600', 'hover:bg-red-700');
-            button.classList.add('bg-gray-600', 'hover:bg-gray-700');
-        }
-    }
+	    toggleMute() {
+	        this.isMuted = !this.isMuted;
+	        const button = document.getElementById('muteButton');
+	        const icon = button.querySelector('i');
+	        
+	        if (this.isMuted) {
+	            icon.className = 'fas fa-volume-mute';
+	            button.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+	            button.classList.add('bg-red-600', 'hover:bg-red-700');
+	        } else {
+	            icon.className = 'fas fa-volume-up';
+	            button.classList.remove('bg-red-600', 'hover:bg-red-700');
+	            button.classList.add('bg-gray-600', 'hover:bg-gray-700');
+	        }
+	    }
 
     updateNewsTicker(newsData) {
         const ticker = document.getElementById('newsTicker');
