@@ -172,6 +172,41 @@
                 <p class="text-gray-600 mt-2 text-sm">يتطلب السماح بالوصول إلى الميكروفون</p>
             </div>
         </div>
+
+        <!-- Audio Files Management -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8 card-hover">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                    <i class="fas fa-music text-green-600 ml-2"></i>
+                    ملفات الصوت الجاهزة
+                </h2>
+                <button onclick="addAudioFile()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-plus ml-1"></i>إضافة ملف صوتي
+                </button>
+            </div>
+            
+            <!-- Audio Files List -->
+            <div id="audioFilesList" class="space-y-4 mb-6">
+                <!-- Audio files will be loaded here -->
+            </div>
+            
+            <!-- Quick Play Section -->
+            <div class="border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">تشغيل سريع</h3>
+                <div class="flex items-center space-x-4">
+                    <select id="audioMessageSelect" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">-- اختر ملف صوتي --</option>
+                    </select>
+                    <button onclick="playSelectedAudioMessage()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-play ml-1"></i>تشغيل
+                    </button>
+                </div>
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-600 mb-2">فترة التكرار التلقائي (دقائق)</label>
+                    <input type="number" id="autoPlayInterval" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0 = بدون تكرار" min="0" max="60">
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->
