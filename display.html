@@ -24,13 +24,13 @@
             0%, 100% { background-color: #10b981; }
             50% { background-color: #059669; }
         }
-        .news-ticker {
-            animation: scroll-left 30s linear infinite;
-        }
-        @keyframes scroll-left {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
+	        .news-ticker {
+	            animation: scroll-right 30s linear infinite;
+	        }
+	        @keyframes scroll-right {
+	            0% { transform: translateX(-100%); }
+	            100% { transform: translateX(100%); }
+	        }
         .media-container {
             background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         }
@@ -49,14 +49,14 @@
 </head>
 <body class="bg-black text-white h-screen">
     <!-- Header -->
-    <header class="gradient-bg text-white py-3 px-6 flex justify-between items-center">
-        <div class="flex items-center space-x-4">
-            <i class="fas fa-hospital text-xl"></i>
-            <h1 id="centerName" class="text-xl font-bold">المركز الطبي</h1>
-            <div id="currentDateTime" class="text-lg font-bold mr-4"></div>
-        </div>
-        <div class="flex items-center space-x-6">
-            <button id="muteButton" onclick="toggleMute()" class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">
+	    <header class="gradient-bg text-white py-3 px-6 flex justify-between items-center">
+	        <div class="flex items-center space-x-4">
+	            <i class="fas fa-hospital text-xl"></i>
+	            <h1 id="centerName" class="text-xl font-bold">المركز الطبي</h1>
+	            <div id="currentDateTime" class="text-lg font-bold mr-4"></div>
+	        </div>
+	        <div class="flex items-center space-x-6">
+	            <button id="muteButton" onclick="displayManager.toggleMute()" class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">
                 <i class="fas fa-volume-up"></i>
             </button>
         </div>
@@ -102,15 +102,15 @@
     </div>
 
     <!-- Call Notification (Top Right) -->
-    <div id="callNotification" class="fixed top-20 right-4 bg-white text-gray-900 rounded-lg p-4 shadow-lg hidden z-50 max-w-sm">
-        <div class="flex items-center space-x-3">
-            <i class="fas fa-bullhorn text-2xl text-green-600"></i>
-            <div>
-                <div id="callMessage" class="font-bold text-sm"></div>
-                <div id="callTime" class="text-xs text-gray-500"></div>
-            </div>
-        </div>
-    </div>
+	    <div id="callNotification" class="fixed top-20 right-4 bg-white text-gray-900 rounded-lg p-6 shadow-2xl hidden z-50 max-w-md border-4 border-green-500">
+	        <div class="flex items-center space-x-4">
+	            <i class="fas fa-bullhorn text-4xl text-green-600 animate-pulse"></i>
+	            <div>
+	                <div id="callMessage" class="font-extrabold text-xl"></div>
+	                <div id="callTime" class="text-sm text-gray-500 mt-1"></div>
+	            </div>
+	        </div>
+	    </div>
 
     <!-- Audio Ding -->
     <audio id="dingSound" preload="auto">
