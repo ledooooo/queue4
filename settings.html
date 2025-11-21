@@ -64,6 +64,10 @@
                     <label class="block text-gray-700 font-semibold mb-2">مدة النداء (ثواني)</label>
                     <input type="number" id="callDuration" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="8" min="3" max="30">
                 </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">الفيديو الافتراضي</label>
+                    <input type="text" id="currentVideo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="اسم ملف الفيديو (مثلاً 1.mp4)">
+                </div>
             </div>
         </div>
 
@@ -147,6 +151,10 @@
                 <button onclick="playCustomAudio()" class="bg-purple-600 text-white p-4 rounded-lg hover:bg-purple-700 transition-colors">
                     <i class="fas fa-play text-xl mb-2 block"></i>
                     تشغيل صوت مخصص
+                </button>
+                <button onclick="setVideo()" class="bg-yellow-600 text-white p-4 rounded-lg hover:bg-yellow-700 transition-colors">
+                    <i class="fas fa-video text-xl mb-2 block"></i>
+                    تعيين فيديو
                 </button>
                 <button onclick="playAudioMessage()" class="bg-pink-600 text-white p-4 rounded-lg hover:bg-pink-700 transition-colors">
                     <i class="fas fa-broadcast-tower text-xl mb-2 block"></i>
