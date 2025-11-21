@@ -29,16 +29,18 @@ class DisplayManager {
             }
         });
 
-        db.clinics.on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                this.clinics = Object.values(snapshot.val());
-                console.log('Clinics loaded:', this.clinics); // Debug log
-                this.updateClinicsDisplay();
-                this.updateCallDuration();
-            } else {
-                console.warn('No clinics data found in Firebase');
-            }
-        });
+	        db.clinics.on('value', (snapshot) => {
+	            if (snapshot.exists()) {
+	                this.clinics = Object.values(snapshot.val());
+	                console.log('Clinics loaded:', this.clinics); // Debug log
+	                this.updateClinicsDisplay();
+	                this.updateCallDuration();
+	            } else {
+	                this.clinics = []; // Ensure clinics array is empty if no data
+	                console.warn('No clinics data found in Firebase');
+	                this.updateClinicsDisplay(); // Update display to show "No clinics" message
+	            }
+	        });
 
         db.current.on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -76,26 +78,17 @@ class DisplayManager {
             }
         });
 
-        db.clinics.once('value', (snapshot) => {
-            if (snapshot.exists()) {
-                this.clinics = Object.values(snapshot.val());
-                console.log('Initial clinics loaded:', this.clinics);
-                this.updateClinicsDisplay();
-            } else {
-                console.error('No clinics found in database');
-                // Show error message to user
-                const container = document.getElementById('clinicsContainer');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="text-center text-gray-400 p-4">
-                            <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
-                            <p>لا توجد عيادات متاحة</p>
-                            <p class="text-xs mt-2">يرجى إضافة العيادات من صفحة الإعدادات</p>
-                        </div>
-                    `;
-                }
-            }
-        });
+	        db.clinics.once('value', (snapshot) => {
+	            if (snapshot.exists()) {
+	                this.clinics = Object.values(snapshot.val());
+	                console.log('Initial clinics loaded:', this.clinics);
+	                this.updateClinicsDisplay();
+	            } else {
+	                this.clinics = []; // Ensure clinics array is empty if no data
+	                console.error('No clinics found in database');
+	                this.updateClinicsDisplay(); // Update display to show "No clinics" message
+	            }
+	        });
     }
 
     updateDisplay() {
