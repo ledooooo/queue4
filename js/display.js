@@ -15,6 +15,7 @@ class DisplayManager {
         this.loadData();
         this.initializeQRCode();
         this.updateDateTime();
+        this.startMediaRotator();
         this.startDateTimeUpdater();
     }
 
@@ -24,6 +25,7 @@ class DisplayManager {
             if (snapshot.exists()) {
                 this.settings = snapshot.val();
                 this.updateDisplay();
+                this.updateMediaDisplay();
             }
         });
 
@@ -68,6 +70,7 @@ class DisplayManager {
             if (snapshot.exists()) {
                 this.settings = snapshot.val();
                 this.updateDisplay();
+                this.updateMediaDisplay();
             } else {
                 console.warn('No settings found');
             }
@@ -103,6 +106,64 @@ class DisplayManager {
         }
 
         // Update news ticker
+    updateMediaDisplay() {
+        const mediaContainer = document.getElementById('mediaContainer');
+        if (!mediaContainer || !this.settings.mediaPath) return;
+
+        const mediaPath = this.settings.mediaPath.endsWith('/') ? this.settings.mediaPath : this.settings.mediaPath + '/';
+        const videoElement = mediaContainer.querySelector('video');
+        
+        if (!videoElement) return;
+
+        // Reset video source to prevent issues
+        videoElement.src = '';
+        videoElement.load();
+
+        if (this.settings.currentVideo && this.settings.currentVideo.trim() !== '') {
+            // Play a single video specified in settings
+            const videoUrl = mediaPath + this.settings.currentVideo;
+            console.log('Playing single video:', videoUrl);
+            videoElement.src = videoUrl;
+            videoElement.load();
+            videoElement.play().catch(e => console.error('Error playing video:', e));
+            // Stop rotation if a single video is set
+            videoElement.onended = null;
+        } else {
+            // Implement a simple rotator for 1.mp4, 2.mp4, 3.mp4 (based on project structure)
+            const mediaFiles = ['1.mp4', '2.mp4', '3.mp4'];
+            let currentMediaIndex = 0;
+
+            const playNextMedia = () => {
+                const nextFile = mediaFiles[currentMediaIndex];
+                const videoUrl = mediaPath + nextFile;
+                
+                console.log('Playing rotating video:', videoUrl);
+                videoElement.src = videoUrl;
+                videoElement.load();
+                videoElement.play().catch(e => console.error('Error playing video:', e));
+
+                currentMediaIndex = (currentMediaIndex + 1) % mediaFiles.length;
+            };
+
+            videoElement.onended = playNextMedia;
+            videoElement.onerror = () => {
+                console.error('Media error, skipping to next.');
+                playNextMedia();
+            };
+
+            // Start the rotation
+            playNextMedia();
+        }
+    },
+
+    startMediaRotator() {
+        // This function will be called once in init()
+        this.updateMediaDisplay();
+        // The media display logic is now self-contained with the video 'onended' event
+        // for continuous playback/rotation.
+    },
+
+    // Update news ticker
         if (this.settings.newsTicker) {
             this.updateNewsTicker({ content: this.settings.newsTicker });
         }
@@ -434,6 +495,15 @@ class DisplayManager {
             // Play clinic audio
             await this.playAudioFile(`${audioPath}clinic${clinic.number}.mp3`);
             
+            // Play suffix - create if not exists
+            try {
+                await this.playAudioFile(`${audioPath}suffix.mp3`);
+            } catch (e) {
+                // If suffix.mp3 doesn't exist, speak the suffix text
+                this.speakText('شكراً لانتظاركم');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
         } catch (error) {
             console.error('Error playing audio sequence:', error);
             // Fallback to TTS
@@ -442,30 +512,58 @@ class DisplayManager {
     }
 
     async playNumberSequence(number, audioPath) {
+        // Max number is 9999, but the provided audio files only go up to 1000.
+        // I will assume the max number is 1000 for safety, and handle up to 999.
+        
+        if (number > 1000) {
+            // Fallback for numbers > 1000 if needed, but I will focus on the provided files.
+            // For now, I will treat it as a single file if it exists, or fall back to TTS.
+            try {
+                await this.playAudioFile(`${audioPath}${number}.mp3`);
+                return;
+            } catch (e) {
+                console.warn(`Audio file for number ${number} not found. Falling back to TTS.`);
+                this.speakText(this.numberToArabic(number));
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return;
+            }
+        }
+
         if (number >= 100) {
-            const hundreds = Math.floor(number / 100) * 100;
-            await this.playAudioFile(`${audioPath}${hundreds}.mp3`);
-            number %= 100;
-            if (number > 0) {
+            const hundreds = Math.floor(number / 100);
+            const remainder = number % 100;
+            
+            // Play hundreds (e.g., 100, 200, 300)
+            await this.playAudioFile(`${audioPath}${hundreds * 100}.mp3`);
+            
+            if (remainder > 0) {
+                // Play "and" (و)
                 await this.playAudioFile(`${audioPath}and.mp3`);
+                number = remainder;
+            } else {
+                number = 0;
             }
         }
         
-        if (number >= 11 && number <= 19) {
-            // Numbers 11 to 19 are handled by their own files (e.g., 11.mp3)
-            await this.playAudioFile(`${audioPath}${number}.mp3`);
-            number = 0; // Handled
-        } else if (number >= 20) {
+        if (number >= 20) {
             const tens = Math.floor(number / 10) * 10;
-            await this.playAudioFile(`${audioPath}${tens}.mp3`);
-            number %= 10;
-            if (number > 0) {
+            const ones = number % 10;
+            
+            if (ones > 0) {
+                // Play ones (e.g., 1, 2, 3)
+                await this.playAudioFile(`${audioPath}${ones}.mp3`);
+                // Play "and" (و)
                 await this.playAudioFile(`${audioPath}and.mp3`);
             }
+            
+            // Play tens (e.g., 20, 30, 40)
+            await this.playAudioFile(`${audioPath}${tens}.mp3`);
+            
+            number = 0;
         }
         
         if (number > 0) {
-            // Numbers 1 to 10 are handled here
+            // Numbers 1 to 19 are handled here (1-10, 11-19)
             await this.playAudioFile(`${audioPath}${number}.mp3`);
         }
     }
@@ -551,6 +649,7 @@ class DisplayManager {
         // Update time every second
         setInterval(() => {
             this.updateDateTime();
+        this.startMediaRotator();
         }, 1000);
     }
 }
