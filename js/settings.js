@@ -67,6 +67,7 @@ class SettingsManager {
         document.getElementById('audioPath').value = this.settings.audioPath || '/audio/';
         document.getElementById('mediaPath').value = this.settings.mediaPath || '/media/';
         document.getElementById('newsTicker').value = this.settings.newsTicker || '';
+        document.getElementById('callDuration').value = this.settings.callDuration || 8;
         
         // Update audio type radio buttons
         const audioTypeRadios = document.querySelectorAll('input[name="audioType"]');
@@ -194,6 +195,7 @@ class SettingsManager {
         this.settings.audioPath = document.getElementById('audioPath').value;
         this.settings.mediaPath = document.getElementById('mediaPath').value;
         this.settings.newsTicker = document.getElementById('newsTicker').value;
+        this.settings.callDuration = parseInt(document.getElementById('callDuration').value) || 8000;
         
         // Get selected audio type
         const selectedAudioType = document.querySelector('input[name="audioType"]:checked');
@@ -246,6 +248,33 @@ class SettingsManager {
         }
     }
 
+    playAudioMessage() {
+        const messages = [
+            'على المرضى الالتزام بالدور والهدوء',
+            'يرجى الانتظار حتى يتم النداء على رقمكم',
+            'شكراً لتعاونكم مع إدارة المركز',
+            'يرجى الحفاظ على النظافة والهدوء'
+        ];
+        
+        const message = prompt('اختر الرسالة الصوتية:\n' + 
+            messages.map((msg, i) => `${i + 1}. ${msg}`).join('\n') + 
+            '\n\nأدخل رقم الرسالة (1-4) أو أدخل نص مخصص:');
+        
+        if (message) {
+            const selectedMessage = messages[parseInt(message) - 1] || message;
+            const fileName = `message_${selectedMessage.replace(/\s+/g, '_').substring(0, 20)}.mp3`;
+            
+            db.display.set({
+                type: 'audio_message',
+                content: fileName,
+                text: selectedMessage,
+                timestamp: Date.now()
+            });
+            
+            this.showNotification(`تم تشغيل الرسالة: ${selectedMessage}`, 'success');
+        }
+    }
+
     makeCall(number, clinicId) {
         const callData = {
             number: number,
@@ -262,6 +291,43 @@ class SettingsManager {
                 console.error('Error making call:', error);
                 this.showNotification('فشل في النداء', 'error');
             });
+    }
+
+    recordAudio() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    this.showNotification('تم بدء التسجيل... اضغط OK لإيقاف التسجيل', 'info');
+                    
+                    const mediaRecorder = new MediaRecorder(stream);
+                    const chunks = [];
+                    
+                    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'audio/mp3' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        // Here you would typically upload to Firebase Storage
+                        // For now, we'll just show a notification
+                        this.showNotification('تم التسجيل بنجاح (يتطلب إعداد Firebase Storage للرفع)', 'success');
+                    };
+                    
+                    mediaRecorder.start();
+                    
+                    // Stop recording after user clicks OK
+                    setTimeout(() => {
+                        if (confirm('إيقاف التسجيل؟')) {
+                            mediaRecorder.stop();
+                            stream.getTracks().forEach(track => track.stop());
+                        }
+                    }, 5000);
+                })
+                .catch(err => {
+                    this.showNotification('لا يمكن الوصول إلى الميكروفون', 'error');
+                });
+        } else {
+            this.showNotification('المتصفح لا يدعم تسجيل الصوت', 'error');
+        }
     }
 
     showNotification(message, type = 'info') {
@@ -303,6 +369,14 @@ function displayClientName() {
 
 function playCustomAudio() {
     settingsManager.playCustomAudio();
+}
+
+function playAudioMessage() {
+    settingsManager.playAudioMessage();
+}
+
+function recordAudio() {
+    settingsManager.recordAudio();
 }
 
 // Initialize settings manager

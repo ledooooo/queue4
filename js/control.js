@@ -4,6 +4,7 @@ class ControlManager {
         this.currentClinic = null;
         this.clinics = [];
         this.isLoggedIn = false;
+        this.isMuted = false;
         this.init();
     }
 
@@ -131,6 +132,17 @@ class ControlManager {
         // Update clinic info display
         document.getElementById('clinicName').textContent = this.currentClinic.name;
         this.updateCurrentNumber();
+        
+        // Add mute button
+        const header = document.querySelector('header .container');
+        if (header && !document.getElementById('controlMuteButton')) {
+            const muteButton = document.createElement('button');
+            muteButton.id = 'controlMuteButton';
+            muteButton.onclick = () => this.toggleMute();
+            muteButton.className = 'bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm ml-4';
+            muteButton.innerHTML = '<i class="fas fa-volume-up"></i>';
+            header.querySelector('.flex').appendChild(muteButton);
+        }
     }
 
     updateCurrentDisplay() {
@@ -293,6 +305,11 @@ class ControlManager {
     makeCall(number) {
         if (!this.currentClinic) return;
 
+        // Speak the call locally if not muted
+        if (!this.isMuted) {
+            this.speakLocalCall(number);
+        }
+
         const callData = {
             number: number,
             clinicId: this.currentClinic.id,
@@ -305,6 +322,24 @@ class ControlManager {
             .catch(error => {
                 console.error('Error making call:', error);
             });
+    }
+
+    speakLocalCall(number) {
+        const text = `العميل رقم ${number} التوجه إلى ${this.currentClinic.name}`;
+        
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ar-SA';
+            utterance.rate = 1;
+            
+            const voices = speechSynthesis.getVoices();
+            const arabicVoice = voices.find(voice => voice.lang.startsWith('ar'));
+            if (arabicVoice) {
+                utterance.voice = arabicVoice;
+            }
+            
+            speechSynthesis.speak(utterance);
+        }
     }
 
     updateClinicData(currentNumber) {
@@ -351,6 +386,22 @@ class ControlManager {
             lastUpdate: Date.now()
         });
         this.showNotification('تم استئناف عمل العيادة', 'success');
+    }
+
+    toggleMute() {
+        this.isMuted = !this.isMuted;
+        const button = document.getElementById('controlMuteButton');
+        const icon = button.querySelector('i');
+        
+        if (this.isMuted) {
+            icon.className = 'fas fa-volume-mute';
+            button.className = 'bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm ml-4';
+        } else {
+            icon.className = 'fas fa-volume-up';
+            button.className = 'bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm ml-4';
+        }
+        
+        this.showNotification(this.isMuted ? 'تم كتم الصوت' : 'تم تشغيل الصوت', 'info');
     }
 
     showNotification(message, type = 'info') {

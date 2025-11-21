@@ -5,6 +5,8 @@ class DisplayManager {
         this.clinics = [];
         this.currentCalls = [];
         this.qrCode = null;
+        this.isMuted = false;
+        this.callDuration = 8000; // 8 seconds default
         this.init();
     }
 
@@ -29,6 +31,7 @@ class DisplayManager {
             if (snapshot.exists()) {
                 this.clinics = Object.values(snapshot.val());
                 this.updateClinicsDisplay();
+                this.updateCallDuration();
             }
         });
 
@@ -99,18 +102,27 @@ class DisplayManager {
     }
 
     createClinicCard(clinic) {
+        const isPaused = clinic.status === 'paused';
+        const statusClass = isPaused ? 'opacity-60' : '';
+        const statusText = isPaused ? ' (متوقفة)' : '';
+        const statusIcon = isPaused ? 'fas fa-pause' : 'fas fa-clock';
+        const cardBg = isPaused ? 'bg-gray-700' : 'bg-gray-800';
+        
         const card = document.createElement('div');
-        card.className = 'clinic-card bg-gray-800 rounded-lg p-4 text-center border border-gray-700';
+        card.className = `clinic-card ${cardBg} rounded-lg p-2 text-center border border-gray-600 ${statusClass}`;
         card.id = `clinic-${clinic.id}`;
         
+        const textColor = isPaused ? 'text-gray-400' : 'text-white';
+        const numberColor = isPaused ? 'text-gray-500' : 'text-blue-400';
+        
         card.innerHTML = `
-            <h3 class="text-white font-bold text-lg mb-2">${clinic.name}</h3>
-            <div class="text-3xl font-bold text-blue-400 mb-2" id="current-${clinic.id}">
+            <h3 class="${textColor} font-bold text-base mb-1">${clinic.name}${statusText}</h3>
+            <div class="text-2xl font-bold ${numberColor} mb-1" id="current-${clinic.id}">
                 ${clinic.currentNumber || 0}
             </div>
-            <div class="text-sm text-gray-400">
-                <i class="fas fa-clock ml-1"></i>
-                <span id="wait-time-${clinic.id}">غير محدد</span>
+            <div class="text-xs text-gray-400">
+                <i class="${statusIcon} ml-1"></i>
+                <span id="wait-time-${clinic.id}">${isPaused ? 'متوقفة' : 'غير محدد'}</span>
             </div>
         `;
         
@@ -127,8 +139,10 @@ class DisplayManager {
     }
 
     handleNewCall(call) {
-        // Play ding sound
-        this.playDingSound();
+        // Play ding sound only if not muted
+        if (!this.isMuted) {
+            this.playDingSound();
+        }
         
         // Highlight clinic card
         const clinicCard = document.getElementById(`clinic-${call.clinicId}`);
@@ -136,43 +150,39 @@ class DisplayManager {
             clinicCard.classList.add('calling');
             setTimeout(() => {
                 clinicCard.classList.remove('calling');
-            }, 5000);
+            }, this.callDuration);
         }
 
-        // Show call modal
-        this.showCallModal(call);
+        // Show call notification
+        this.showCallNotification(call);
 
-        // Speak the call
-        this.speakCall(call);
+        // Play audio sequence if using MP3 files
+        if (this.settings.audioType === 'mp3' && !this.isMuted) {
+            this.playAudioSequence(call);
+        } else if (!this.isMuted) {
+            // Fallback to TTS
+            this.speakCall(call);
+        }
     }
 
-    showCallModal(call) {
-        const modal = document.getElementById('callModal');
+    showCallNotification(call) {
+        const notification = document.getElementById('callNotification');
         const message = document.getElementById('callMessage');
         const time = document.getElementById('callTime');
 
-        if (modal && message && time) {
+        if (notification && message && time) {
             const clinic = this.clinics.find(c => c.id === call.clinicId);
             const clinicName = clinic ? clinic.name : 'العيادة';
             
             message.textContent = `العميل رقم ${call.number} التوجه إلى ${clinicName}`;
             time.textContent = new Date().toLocaleTimeString('ar-SA');
             
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            notification.classList.remove('hidden');
 
-            // Auto close after 5 seconds
+            // Auto close after configured duration
             setTimeout(() => {
-                this.closeCallModal();
-            }, 5000);
-        }
-    }
-
-    closeCallModal() {
-        const modal = document.getElementById('callModal');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+                notification.classList.add('hidden');
+            }, this.callDuration);
         }
     }
 
@@ -255,6 +265,17 @@ class DisplayManager {
                 // Play custom audio
                 this.playCustomAudio(displayData.content);
                 break;
+            case 'audio_message':
+                // Play audio message
+                this.playAudioMessage(displayData.content);
+                break;
+        }
+    }
+
+    updateCallDuration() {
+        // Update call duration from settings
+        if (this.settings.callDuration) {
+            this.callDuration = this.settings.callDuration;
         }
     }
 
@@ -264,14 +285,112 @@ class DisplayManager {
     }
 
     playCustomAudio(audioFile) {
-        const audio = new Audio(`${this.settings.audioPath || '/audio/'}${audioFile}`);
-        audio.play().catch(e => console.log('Could not play custom audio:', e));
+        if (!this.isMuted) {
+            const audio = new Audio(`${this.settings.audioPath || '/audio/'}${audioFile}`);
+            audio.play().catch(e => console.log('Could not play custom audio:', e));
+        }
+    }
+
+    playAudioMessage(audioFile) {
+        if (!this.isMuted) {
+            const audio = new Audio(`${this.settings.audioPath || '/audio/'}${audioFile}`);
+            audio.play().catch(e => console.log('Could not play audio message:', e));
+        }
+    }
+
+    async playAudioSequence(call) {
+        const clinic = this.clinics.find(c => c.id === call.clinicId);
+        if (!clinic) return;
+
+        const audioPath = this.settings.audioPath || '/audio/';
+        const number = parseInt(call.number);
+        
+        try {
+            // Play ding sound
+            await this.playAudioFile(`${audioPath}ding.mp3`);
+            
+            // Play prefix - create if not exists
+            try {
+                await this.playAudioFile(`${audioPath}prefix.mp3`);
+            } catch (e) {
+                // If prefix.mp3 doesn't exist, speak the prefix text
+                this.speakText('على العميل رقم');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            // Play number sequence
+            await this.playNumberSequence(number, audioPath);
+            
+            // Play clinic audio
+            await this.playAudioFile(`${audioPath}clinic${clinic.number}.mp3`);
+            
+        } catch (error) {
+            console.error('Error playing audio sequence:', error);
+            // Fallback to TTS
+            this.speakCall(call);
+        }
+    }
+
+    async playNumberSequence(number, audioPath) {
+        if (number >= 100) {
+            const hundreds = Math.floor(number / 100) * 100;
+            await this.playAudioFile(`${audioPath}${hundreds}.mp3`);
+            number %= 100;
+            if (number > 0) {
+                await this.playAudioFile(`${audioPath}and.mp3`);
+            }
+        }
+        
+        if (number >= 20) {
+            const tens = Math.floor(number / 10) * 10;
+            await this.playAudioFile(`${audioPath}${tens}.mp3`);
+            number %= 10;
+            if (number > 0) {
+                await this.playAudioFile(`${audioPath}and.mp3`);
+            }
+        }
+        
+        if (number > 0) {
+            await this.playAudioFile(`${audioPath}${number}.mp3`);
+        }
+    }
+
+    playAudioFile(src) {
+        return new Promise((resolve, reject) => {
+            const audio = new Audio(src);
+            audio.onended = resolve;
+            audio.onerror = reject;
+            audio.play().catch(reject);
+        });
+    }
+
+    toggleMute() {
+        this.isMuted = !this.isMuted;
+        const button = document.getElementById('muteButton');
+        const icon = button.querySelector('i');
+        
+        if (this.isMuted) {
+            icon.className = 'fas fa-volume-mute';
+            button.className = 'bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm';
+        } else {
+            icon.className = 'fas fa-volume-up';
+            button.className = 'bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm';
+        }
     }
 
     updateNewsTicker(newsData) {
         const ticker = document.getElementById('newsTicker');
-        if (ticker && newsData.content) {
-            ticker.textContent = newsData.content;
+        if (ticker) {
+            const content = (newsData && newsData.content) ? newsData.content : 
+                           (typeof newsData === 'string' ? newsData : 
+                           'مرحباً بكم في المركز الطبي - نسعى لتقديم أفضل خدمة طبية لكم');
+            
+            ticker.textContent = content;
+            
+            // Force animation restart
+            ticker.style.animation = 'none';
+            ticker.offsetHeight; // Trigger reflow
+            ticker.style.animation = null;
         }
     }
 
@@ -294,26 +413,22 @@ class DisplayManager {
     updateDateTime() {
         const now = new Date();
         
-        // Update date
-        const dateElement = document.getElementById('currentDate');
-        if (dateElement) {
+        // Update combined date and time
+        const dateTimeElement = document.getElementById('currentDateTime');
+        if (dateTimeElement) {
             const dateStr = now.toLocaleDateString('ar-SA', {
-                year: 'numeric',
+                day: 'numeric',
                 month: 'long',
-                day: 'numeric'
+                year: 'numeric'
             });
-            dateElement.textContent = dateStr;
-        }
-
-        // Update time
-        const timeElement = document.getElementById('currentTime');
-        if (timeElement) {
+            
             const timeStr = now.toLocaleTimeString('ar-SA', {
-                hour: '2-digit',
+                hour: 'numeric',
                 minute: '2-digit',
-                second: '2-digit'
+                hour12: true
             });
-            timeElement.textContent = timeStr;
+            
+            dateTimeElement.textContent = `${dateStr} ${timeStr}`;
         }
     }
 
@@ -326,12 +441,5 @@ class DisplayManager {
 }
 
 // Global function for onclick handler
-function closeCallModal() {
-    displayManager.closeCallModal();
-}
-
-// Initialize display manager
-let displayManager;
-document.addEventListener('DOMContentLoaded', () => {
-    displayManager = new DisplayManager();
-});
+function toggleMute() {
+    displayManager.toggleMute()
